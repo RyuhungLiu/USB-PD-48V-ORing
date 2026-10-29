@@ -1,0 +1,9 @@
+CompileFlags:
+  Remove:
+    - -m*
+    - -W*
+    - --print-memory-usage
+
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None

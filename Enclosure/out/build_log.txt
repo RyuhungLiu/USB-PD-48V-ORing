@@ -1,0 +1,24 @@
+Enclosure 97.2 x 62.0, front height 17.9, back height 40.4, slant 20° (determined by screen solder wires above H2 solder wires)
+Right-side shelf: X 72.5..97.2, Y 0.0..62.0, top height 40.4; slanted face reaches the shelf height at Y≈62.0
+M3 bosses: four identical M3x14 self-tapping screws (max length under head 15.2, engagement in boss 7.5 mm)
+Top cover split into slanted cover 1 solid(s), shelf cover 1 solid(s)
+Screen s0 along slanted face = 13.37, window center (34.5, 31.9), touch center shelf top X/Y (84.9, 30.9)
+Interference check (overlap volume mm^3):
+  screen minimum distance to main board parts 3.50 mm
+  touch minimum distance to main board parts 8.44 mm
+  top cover minimum distance to main board parts 0.39 mm
+  0 interference(s) in total
+Print overhang check (normal facing down, angle to horizontal < 45°, excluding the bed face):
+  cover_panel: 77.8 mm², 28 face(s)
+    12.5 mm²  size 1.6 x 7.3  @ z 14.3
+    12.5 mm²  size 1.6 x 7.3  @ z 27.8
+    5.1 mm²  size 0.8 x 6.0  @ z 13.1
+    5.1 mm²  size 0.8 x 6.0  @ z 26.6
+    4.5 mm²  size 1.6 x 3.2  @ z 29.0
+    4.5 mm²  size 1.6 x 3.2  @ z 15.5
+  cover_shelf: 1.3 mm², 2 face(s)
+    0.8 mm²  size 1.6 x 1.8  @ z 0.2
+    0.5 mm²  size 0.9 x 1.8  @ z 21.7
+  base: 0.0 mm², 0 face(s)
+Output: <repo>\Enclosure\out
+GUI screenshots: gui_*.png

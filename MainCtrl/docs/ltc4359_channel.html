@@ -1,0 +1,421 @@
+<title>LTC4359 Channel Revision</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: single-column engineering reference page, schematic is the centerpiece; colors follow EasyEDA conventions (red = component, green = wire, blue = net name), orange marks changes only */
+:root {
+  --bg: #f5f6f3;
+  --panel: #ffffff;
+  --fg: #1b201d;
+  --muted: #5d6762;
+  --line: #d6dcd8;
+  --wire: #2a8744;
+  --sym: #a5333a;
+  --net: #2552c2;
+  --new: #d24a10;
+  --warn: #c22c2c;
+  --ok: #2a8744;
+  --chip: #eef1ec;
+  --font-body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "Noto Sans TC", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101413; --panel: #161b19; --fg: #e3e8e5; --muted: #98a59f; --line: #2b3431;
+    --wire: #5cc177; --sym: #ff8787; --net: #88a9ff; --new: #ff9150; --warn: #ff6b6b; --ok: #5cc177; --chip: #1d2421;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101413; --panel: #161b19; --fg: #e3e8e5; --muted: #98a59f; --line: #2b3431;
+  --wire: #5cc177; --sym: #ff8787; --net: #88a9ff; --new: #ff9150; --warn: #ff6b6b; --ok: #5cc177; --chip: #1d2421;
+  color-scheme: dark;
+}
+
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.65; }
+.page { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 64px; display: grid; gap: 40px; }
+
+header { display: grid; gap: 8px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font-size: clamp(26px, 4vw, 36px); line-height: 1.2; text-wrap: balance; }
+.lede { margin: 0; max-width: 68ch; color: var(--muted); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.chip { font-family: var(--font-mono); font-size: 12px; padding: 2px 10px; border-radius: 999px; background: var(--chip); color: var(--fg); border: 1px solid var(--line); }
+
+section { display: grid; gap: 14px; min-width: 0; }
+h2 { margin: 0; font-size: 20px; text-wrap: balance; }
+h2 .num { font-family: var(--font-mono); color: var(--muted); font-weight: 500; margin-right: 8px; }
+p { margin: 0; max-width: 72ch; }
+code, .mono { font-family: var(--font-mono); font-size: .92em; }
+
+figure { margin: 0; display: grid; gap: 10px; }
+.sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; }
+.sheet svg { display: block; width: 100%; min-width: 860px; height: auto; }
+figcaption { color: var(--muted); font-size: 14px; max-width: 80ch; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
+
+/* SVG elements */
+.w { stroke: var(--wire); stroke-width: 2; fill: none; stroke-linecap: square; }
+.s { stroke: var(--sym); stroke-width: 1.6; fill: none; }
+.sf { fill: var(--sym); stroke: none; }
+.nw { stroke: var(--new); stroke-width: 2; fill: none; }
+.nwf { fill: var(--new); stroke: none; }
+.box { stroke: var(--sym); stroke-width: 1.6; fill: var(--panel); }
+.boxn { stroke: var(--new); stroke-width: 2; fill: var(--panel); stroke-dasharray: 0; }
+.port { stroke: var(--net); stroke-width: 1.4; fill: var(--panel); }
+.jd { fill: var(--wire); }
+.t { fill: var(--fg); font-family: var(--font-mono); font-size: 11px; font-weight: 500; }
+.tb { fill: var(--fg); font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+.tm { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+.tp { fill: var(--muted); font-family: var(--font-mono); font-size: 9.5px; }
+.tn { fill: var(--net); font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; }
+.tx { fill: var(--new); font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; }
+.tw { fill: var(--warn); font-family: var(--font-body); font-size: 12px; font-weight: 700; }
+.tok { fill: var(--ok); font-family: var(--font-body); font-size: 12px; font-weight: 700; }
+.th { fill: var(--fg); font-family: var(--font-body); font-size: 13px; font-weight: 700; }
+.ta { fill: var(--muted); font-family: var(--font-body); font-size: 11px; }
+.warnline { stroke: var(--warn); stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; }
+.wf { fill: var(--warn); }
+.divider { stroke: var(--line); stroke-width: 1; }
+
+/* Tables */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; letter-spacing: .04em; color: var(--muted); font-weight: 500; background: var(--chip); }
+tr:last-child td { border-bottom: none; }
+td.mono, th.mono { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tag { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 8px; border-radius: 4px; white-space: nowrap; border: 1px solid currentColor; }
+.tag.add { color: var(--new); }
+.tag.del { color: var(--warn); }
+.tag.chg { color: var(--new); border-style: dashed; }
+.tag.keep { color: var(--muted); }
+.tag.opt { color: var(--net); border-style: dashed; }
+td.strike { text-decoration: line-through; color: var(--muted); }
+
+.checks { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.checks li { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
+.checks li > span:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 3px; }
+.note { border-left: 3px solid var(--new); padding: 8px 14px; background: var(--panel); border-radius: 0 6px 6px 0; max-width: 80ch; }
+footer { color: var(--muted); font-size: 13px; }
+@media (max-width: 520px) { .page { padding-inline: 16px; } }
+</style>
+
+<div class="page">
+
+<header>
+  <div class="eyebrow">48V10+10A ORing · Reference schematic · CH1</div>
+  <h1>LTC4359 Channel Revision</h1>
+  <p class="lede">Replace the LM74700 with an LTC4359 while keeping the Q3/Q1 back-to-back common-source arrangement. When SHDN is pulled low, GATE is pulled to SOURCE, both MOSFETs turn off together, and the output is truly disconnected. CH2 is the same circuit; see the cross-reference table in section 4 for its designators.</p>
+  <div class="meta">
+    <span class="chip">Based on LTC4359 Rev.E Figure 6 / 12 / 15</span>
+    <span class="chip">LMx_EN polarity: high = on</span>
+    <span class="chip">2026-10-10</span>
+  </div>
+</header>
+
+<section>
+  <h2><span class="num">1</span>Revised single-channel schematic</h2>
+  <figure>
+    <div class="sheet">
+      <svg viewBox="0 0 1080 550" role="img" aria-label="CH1 revised schematic: VIN_48V_1 passes through shunt R27 to VIN1_ANODE, then through Q3 and Q1 back-to-back common-source to VOUT_48V; LTC4359 IN connects to VIN1_ANODE, SOURCE to the common source, GATE drives both MOSFETs through R28, OUT connects to VOUT_48V, SHDN connects to LM1_EN through 1k and is pulled down to ground by 47k.">
+        <!-- ===== Main power rail y=360 ===== -->
+        <polygon class="port" points="16,349 84,349 96,360 84,371 16,371"/>
+        <text class="tn" x="52" y="364" text-anchor="middle" font-size="9.5">VIN_48V_1</text>
+        <path class="w" d="M96 360 H300 M360 360 H500 M580 360 H680 M760 360 H950"/>
+
+        <!-- Input capacitors and TVS -->
+        <path class="w" d="M120 360 V392 M120 400 V440"/>
+        <path class="s" d="M108 392 H132 M108 400 H132"/>
+        <text class="t" x="127" y="391">C11</text><text class="tm" x="127" y="404">1µF</text>
+
+        <path class="w" d="M170 360 V392 M170 400 V440"/>
+        <path class="s" d="M158 392 H182 M158 402 Q170 396 182 402"/>
+        <text class="tm" x="185" y="389">+</text>
+        <text class="t" x="177" y="404">C12</text><text class="tm" x="177" y="416">100µF</text>
+
+        <path class="w" d="M230 360 V395 M230 411 V440"/>
+        <polygon class="s" points="221,411 239,411 230,395"/>
+        <path class="s" d="M221 395 H239 M219 391 L221 395 M239 395 L241 399"/>
+        <text class="t" x="230" y="468" text-anchor="middle">D1 SMBJ58A</text>
+
+        <path class="w" d="M120 440 H230 M170 440 V446"/>
+        <path class="s" d="M160 446 H180 M163.5 450.5 H176.5 M167 455 H173"/>
+
+        <!-- R27 shunt -->
+        <rect class="s" x="300" y="354" width="60" height="12"/>
+        <text class="t" x="330" y="345" text-anchor="middle">R27 10mΩ</text>
+        <text class="tn" x="366" y="352">VIN1_ANODE</text>
+
+        <!-- INA sensing (unchanged) -->
+        <path class="w" d="M280 360 V378 M280 412 V480"/>
+        <rect class="s" x="274" y="378" width="12" height="34"/>
+        <text class="t" x="290" y="393">R18</text><text class="tm" x="290" y="405">10Ω</text>
+        <path class="w" d="M385 360 V378 M385 412 V480"/>
+        <rect class="s" x="379" y="378" width="12" height="34"/>
+        <text class="t" x="376" y="393" text-anchor="end">R19</text><text class="tm" x="376" y="405" text-anchor="end">10Ω</text>
+        <path class="w" d="M280 445 H328 M336 445 H385"/>
+        <path class="s" d="M328 434 V456 M336 434 V456"/>
+        <text class="tm" x="332" y="472" text-anchor="middle">C10 100nF</text>
+        <path class="w" d="M415 360 V480"/>
+        <rect class="box" x="255" y="480" width="205" height="54" rx="3"/>
+        <text class="tp" x="280" y="494" text-anchor="middle">IN+</text>
+        <text class="tp" x="385" y="494" text-anchor="middle">IN−</text>
+        <text class="tp" x="417" y="494" text-anchor="middle">VBUS</text>
+        <text class="t" x="357" y="520" text-anchor="middle">U4 INA2xx @0x40 · unchanged</text>
+
+        <!-- C35 -->
+        <path class="w" d="M475 360 V392 M475 400 V418"/>
+        <path class="s" d="M463 392 H487 M463 400 H487"/>
+        <path class="s" d="M465 418 H485 M468.5 422.5 H481.5 M472 427 H478"/>
+        <text class="tm" x="475" y="447" text-anchor="middle">C35 100nF</text>
+
+        <!-- ===== U1 LTC4359 ===== -->
+        <rect class="boxn" x="500" y="90" width="320" height="100" rx="3"/>
+        <text class="tb" x="660" y="122" text-anchor="middle">U1 · LTC4359CMS8</text>
+        <text class="tm" x="660" y="140" text-anchor="middle">MSOP-8 · 4–80V · pins 3/7 NC</text>
+        <text class="tx" x="812" y="106" text-anchor="end">replaces LM74700</text>
+        <text class="tp" x="506" y="124">SHDN 5</text>
+        <text class="tp" x="520" y="183" text-anchor="middle">IN 4</text>
+        <text class="tp" x="585" y="183" text-anchor="middle">GATE 1</text>
+        <text class="tp" x="640" y="183" text-anchor="middle">SOURCE 2</text>
+        <text class="tp" x="760" y="183" text-anchor="middle">VSS 6</text>
+        <text class="tp" x="814" y="144" text-anchor="end">OUT 8</text>
+
+        <!-- IN -->
+        <path class="w" d="M445 360 V230 H520 V190"/>
+        <!-- VSS -->
+        <path class="w" d="M760 190 V200"/>
+        <path class="s" d="M750 200 H770 M753.5 204.5 H766.5 M757 209 H763"/>
+        <!-- OUT -->
+        <path class="w" d="M820 140 H860 V360"/>
+
+        <!-- GATE → R28 → gate bus -->
+        <path class="w" d="M585 190 V205 M585 235 V285"/>
+        <rect class="s" x="579" y="205" width="12" height="30"/>
+        <text class="t" x="574" y="219" text-anchor="end">R28</text><text class="tm" x="574" y="231" text-anchor="end">0Ω</text>
+        <path class="w" d="M540 285 H634 A6 6 0 0 1 646 285 H720"/>
+        <text class="tn" x="676" y="279">INPUT1_GATE</text>
+
+        <!-- SOURCE → common source -->
+        <path class="w" d="M640 190 V360"/>
+        <text class="tn" x="646" y="352">SRC</text>
+
+        <!-- Q3 series gate resistor R_G (new) -->
+        <path class="w" d="M540 285 V292 M540 322 V340"/>
+        <rect class="nw" x="534" y="292" width="12" height="30"/>
+        <text class="tx" x="529" y="305" text-anchor="end">R_G1</text><text class="tx" x="529" y="317" text-anchor="end">10Ω</text>
+        <!-- Q1 gate -->
+        <path class="w" d="M720 285 V340"/>
+
+        <!-- Zener D_Z: GATE (cathode) ↔ SOURCE (anode) (new) -->
+        <path class="w" d="M665 285 V298 M665 314 V330 H640"/>
+        <polygon class="nw" points="657,314 673,314 665,298"/>
+        <path class="nw" d="M657 298 H673 M655 294 L657 298 M673 298 L675 302"/>
+        <text class="tx" x="680" y="304">D_Z1</text><text class="tx" x="680" y="316">12V</text>
+
+        <!-- Q3: switch, D=VIN1_ANODE, S=common source -->
+        <rect class="box" x="500" y="340" width="80" height="40" rx="4"/>
+        <text class="t" x="540" y="357" text-anchor="middle">Q3</text>
+        <text class="tp" x="506" y="376">D</text><text class="tp" x="574" y="376" text-anchor="end">S</text>
+        <polygon class="sf" points="551,363 551,376 537,369.5"/>
+        <path class="s" d="M536 363 V376"/>
+        <text class="t" x="540" y="398" text-anchor="middle">Q3 · switch</text>
+        <text class="tm" x="540" y="411" text-anchor="middle">IPT015N10N5</text>
+
+        <!-- Q1: ideal diode, S=common source, D=VOUT -->
+        <rect class="box" x="680" y="340" width="80" height="40" rx="4"/>
+        <text class="t" x="720" y="357" text-anchor="middle">Q1</text>
+        <text class="tp" x="686" y="376">S</text><text class="tp" x="754" y="376" text-anchor="end">D</text>
+        <polygon class="sf" points="713,363 713,376 727,369.5"/>
+        <path class="s" d="M728 363 V376"/>
+        <text class="t" x="720" y="398" text-anchor="middle">Q1 · ideal diode</text>
+        <text class="tm" x="720" y="411" text-anchor="middle">IPT015N10N5</text>
+
+        <!-- VOUT -->
+        <polygon class="port" points="950,349 1048,349 1060,360 1048,371 950,371"/>
+        <text class="tn" x="1001" y="364" text-anchor="middle">VOUT_48V</text>
+        <text class="tm" x="905" y="392" text-anchor="middle">to C21/C22 · U9 XT60</text>
+
+        <!-- ===== SHDN control (new) ===== -->
+        <polygon class="port" points="190,109 278,109 290,120 278,131 190,131"/>
+        <text class="tn" x="234" y="124" text-anchor="middle" font-size="9.5">LM1_EN · PB9</text>
+        <path class="w" d="M290 120 H320 M360 120 H500"/>
+        <rect class="nw" x="320" y="114" width="40" height="12"/>
+        <text class="tx" x="340" y="106" text-anchor="middle">R_SD1 1k</text>
+        <path class="w" d="M410 120 V132 M410 162 V172"/>
+        <rect class="nw" x="404" y="132" width="12" height="30"/>
+        <path class="s" d="M400 172 H420 M403.5 176.5 H416.5 M407 181 H413"/>
+        <text class="tx" x="421" y="145">R_PD1</text><text class="tx" x="421" y="157">47k</text>
+        <path class="w" d="M465 120 V140 M465 148 V160"/>
+        <path class="nw" d="M453 140 H477 M453 148 H477"/>
+        <path class="s" d="M455 160 H475 M458.5 164.5 H471.5 M462 169 H468"/>
+        <text class="tx" x="465" y="190" text-anchor="middle">C01 10nF</text>
+
+        <!-- Junctions -->
+        <g class="jd">
+          <circle cx="120" cy="360" r="3.5"/><circle cx="170" cy="360" r="3.5"/><circle cx="230" cy="360" r="3.5"/><circle cx="170" cy="440" r="3.5"/>
+          <circle cx="280" cy="360" r="3.5"/><circle cx="385" cy="360" r="3.5"/><circle cx="280" cy="445" r="3.5"/><circle cx="385" cy="445" r="3.5"/>
+          <circle cx="415" cy="360" r="3.5"/><circle cx="445" cy="360" r="3.5"/><circle cx="475" cy="360" r="3.5"/>
+          <circle cx="640" cy="360" r="3.5"/><circle cx="640" cy="330" r="3.5"/>
+          <circle cx="585" cy="285" r="3.5"/><circle cx="665" cy="285" r="3.5"/>
+          <circle cx="860" cy="360" r="3.5"/>
+          <circle cx="410" cy="120" r="3.5"/><circle cx="465" cy="120" r="3.5"/>
+        </g>
+      </svg>
+    </div>
+    <div class="legend">
+      <span><i class="sw" style="background: var(--sym)"></i>Retained components</span>
+      <span><i class="sw" style="background: var(--new)"></i>Added / replaced / value changed</span>
+      <span><i class="sw" style="background: var(--wire)"></i>Wires</span>
+      <span><i class="sw" style="background: var(--net)"></i>Net names / ports</span>
+    </div>
+    <figcaption>The power path is unchanged: VIN1_ANODE → Q3 (D→S) → common source SRC (formerly <span class="mono">$1N266</span>) → Q1 (S→D) → VOUT_48V. The changes are concentrated in the controller and how it is connected: IN is powered from VIN1_ANODE, SOURCE connects to the common source, and SHDN is driven directly by the MCU and pulled down by default. The diode drawn inside each MOSFET box shows the body-diode direction.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2><span class="num">2</span>Why the current board still shows 17V after turn-off</h2>
+  <figure>
+    <div class="sheet">
+      <svg viewBox="0 0 980 250" role="img" aria-label="Off-state comparison: the LM74700 pulls the gate to ANODE, i.e. VIN 20V, so the MOSFET becomes a source follower and the output is about 17V; the LTC4359 pulls the gate to SOURCE, VGS is zero, the two body diodes are in anti-series, and the output is 0V.">
+        <line class="divider" x1="490" y1="12" x2="490" y2="238"/>
+
+        <!-- Panel A: LM74700 -->
+        <text class="th" x="20" y="26">Current board LM74700 · EN pulled low</text>
+        <text class="t" x="24" y="140">VIN 20V</text>
+        <path class="w" d="M24 150 H120 M180 150 H300 M360 150 H460"/>
+        <rect class="box" x="120" y="132" width="60" height="36" rx="4"/>
+        <text class="t" x="150" y="147" text-anchor="middle">Q3</text>
+        <polygon class="sf" points="159,153 159,164 147,158.5"/><path class="s" d="M146 153 V164"/>
+        <rect class="box" x="300" y="132" width="60" height="36" rx="4"/>
+        <text class="t" x="330" y="147" text-anchor="middle">Q1</text>
+        <polygon class="sf" points="323,153 323,164 335,158.5"/><path class="s" d="M336 153 V164"/>
+        <rect class="box" x="180" y="40" width="110" height="32" rx="3"/>
+        <text class="t" x="235" y="61" text-anchor="middle">LM74700</text>
+        <path class="w" d="M180 56 H60 V150"/>
+        <text class="ta" x="66" y="50">ANODE (tied to VIN)</text>
+        <path class="w" d="M235 72 V100 M150 100 H330 M150 100 V132 M330 100 V132"/>
+        <text class="tw" x="244" y="92">VG pulled to ANODE = 20V</text>
+        <path class="w" d="M240 150 V150"/>
+        <circle class="jd" cx="240" cy="150" r="3.5"/>
+        <text class="tw" x="240" y="190" text-anchor="middle">Source ≈ VG − Vth ≈ 17V</text>
+        <text class="tw" x="460" y="140" text-anchor="end">VOUT ≈ 17V</text>
+        <path class="warnline" d="M40 215 H440"/>
+        <polygon class="wf" points="440,210 450,215 440,220"/>
+        <text class="ta" x="240" y="236" text-anchor="middle">The MOSFET becomes a source follower and can still drive a load in the off state</text>
+
+        <!-- Panel B: LTC4359 -->
+        <text class="th" x="510" y="26">Revised LTC4359 · SHDN pulled low</text>
+        <text class="t" x="514" y="140">VIN 20V</text>
+        <path class="w" d="M514 150 H610 M670 150 H790 M850 150 H950"/>
+        <rect class="box" x="610" y="132" width="60" height="36" rx="4"/>
+        <text class="t" x="640" y="147" text-anchor="middle">Q3</text>
+        <polygon class="sf" points="649,153 649,164 637,158.5"/><path class="s" d="M636 153 V164"/>
+        <rect class="box" x="790" y="132" width="60" height="36" rx="4"/>
+        <text class="t" x="820" y="147" text-anchor="middle">Q1</text>
+        <polygon class="sf" points="813,153 813,164 825,158.5"/><path class="s" d="M826 153 V164"/>
+        <rect class="boxn" x="670" y="40" width="110" height="32" rx="3"/>
+        <text class="t" x="725" y="61" text-anchor="middle">LTC4359</text>
+        <path class="w" d="M670 56 H550 V150"/>
+        <text class="ta" x="556" y="50">IN (supply and sensing)</text>
+        <path class="w" d="M700 72 V100 M640 100 H724 A6 6 0 0 1 736 100 H820 M640 100 V132 M820 100 V132"/>
+        <path class="w" d="M730 72 V150"/>
+        <circle class="jd" cx="730" cy="150" r="3.5"/>
+        <text class="ta" x="736" y="86">SOURCE</text>
+        <text class="tok" x="830" y="92">VG = VS, VGS = 0</text>
+        <text class="tok" x="730" y="190" text-anchor="middle">Two body diodes in anti-series, blocking both directions</text>
+        <text class="tok" x="950" y="140" text-anchor="end">VOUT = 0V</text>
+        <text class="ta" x="730" y="236" text-anchor="middle">IN is powered separately, so the controller keeps working while off</text>
+      </svg>
+    </div>
+    <figcaption>The only difference is "where the gate is pulled when off". The LM74700 pulls it to ANODE (VIN), so the common source is lifted to about VIN − 3V; the LTC4359 pulls it to SOURCE, the gate-source voltage is zero, both MOSFETs are cut off, and since the body diodes face opposite directions, neither direction conducts.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2><span class="num">3</span>U1 pin connections (MSOP-8)</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="mono">Pin</th><th>Name</th><th>Connects to</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">1</td><td class="mono">GATE</td><td>R28 0Ω → <span class="mono">INPUT1_GATE</span>: directly to the Q1 gate, and through R_G1 10Ω to the Q3 gate</td><td>Internal 15V clamp, plus external D_Z1 12V</td></tr>
+        <tr><td class="mono">2</td><td class="mono">SOURCE</td><td>Common source SRC (formerly <span class="mono">$1N266</span>)</td><td>Return path for the fast gate pull-down; keep the trace as short as possible, close to the MOSFET sources</td></tr>
+        <tr><td class="mono">3</td><td class="mono">NC</td><td>Not connected</td><td></td></tr>
+        <tr><td class="mono">4</td><td class="mono">IN</td><td><span class="mono">VIN1_ANODE</span> (after R27)</td><td>Supply, and also the anode sense point of the ideal diode</td></tr>
+        <tr><td class="mono">5</td><td class="mono">SHDN</td><td>R_SD1 1k → <span class="mono">LM1_EN</span>; R_PD1 47k and C01 10nF to GND</td><td>&lt;0.6V off, &gt;2V on; it self-enables when floating, so a pull-down is mandatory</td></tr>
+        <tr><td class="mono">6</td><td class="mono">VSS</td><td>GND</td><td>USB-C cannot be reverse-connected, so the datasheet's 1k reverse-protection resistor is not needed</td></tr>
+        <tr><td class="mono">7</td><td class="mono">NC</td><td>Not connected</td><td></td></tr>
+        <tr><td class="mono">8</td><td class="mono">OUT</td><td><span class="mono">VOUT_48V</span></td><td>Cathode sense point of the ideal diode; needs ≥1.5µF nearby</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">4</span>Component change cross-reference (CH1 / CH2)</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Action</th><th class="mono">CH1</th><th class="mono">CH2</th><th>Part / value</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag add">Replace</span></td><td class="mono">U1</td><td class="mono">U2</td><td>LM74700QDBVRQ1 → <b>LTC4359CMS8</b></td><td>Package changes to MSOP-8; pinout in section 3</td></tr>
+        <tr><td><span class="tag del">Remove</span></td><td class="mono strike">C31</td><td class="mono strike">C32</td><td>470nF</td><td>LTC4359 has no VCAP pin</td></tr>
+        <tr><td><span class="tag del">Remove</span></td><td class="mono strike">R11</td><td class="mono strike">R24</td><td>100kΩ</td><td>Former EN pull-up to VIN; keeping it would turn the output on before 3V3 is up</td></tr>
+        <tr><td><span class="tag del">Remove</span></td><td class="mono strike">Q5</td><td class="mono strike">Q6</td><td>BSS123</td><td>Former EN pull-down transistor</td></tr>
+        <tr><td><span class="tag del">Remove</span></td><td class="mono strike">R14</td><td class="mono strike">R29</td><td>100kΩ</td><td>Q5/Q6 gate pull-up</td></tr>
+        <tr><td><span class="tag del">Remove</span></td><td class="mono strike">R101</td><td class="mono strike">R30</td><td>330Ω</td><td>Q5/Q6 series gate resistor</td></tr>
+        <tr><td><span class="tag chg">Change value &amp; connection</span></td><td class="mono">C01</td><td class="mono">C18</td><td>100nF → <b>10nF</b></td><td>Moved from EN to SHDN-to-GND, to prevent high dv/dt coupling (datasheet recommendation)</td></tr>
+        <tr><td><span class="tag add">Add</span></td><td class="mono">R_SD1</td><td class="mono">R_SD2</td><td>1kΩ</td><td><span class="mono">LMx_EN</span> → SHDN</td></tr>
+        <tr><td><span class="tag add">Add</span></td><td class="mono">R_PD1</td><td class="mono">R_PD2</td><td>47kΩ</td><td>SHDN → GND. Keeps the channel off during MCU reset and before 3V3 is up</td></tr>
+        <tr><td><span class="tag add">Add</span></td><td class="mono">D_Z1 (D5)</td><td class="mono">D_Z2 (D6)</td><td>12V Zener SOD-523: <b>BZT52C12VT</b> (datasheet originally uses DDZ9699T)</td><td>Cathode to GATE, anode to SOURCE; mandatory above 24V. Do not substitute a 1N4148W (no forward clamp)</td></tr>
+        <tr><td><span class="tag add">Add</span></td><td class="mono">R_G1</td><td class="mono">R_G2</td><td>10Ω</td><td>In series with the gate of the input-side MOSFET (Q3 / Q4), close to the MOSFET, to prevent parasitic oscillation</td></tr>
+        <tr><td><span class="tag keep">Keep</span></td><td class="mono">R28</td><td class="mono">R13</td><td>0Ω</td><td>GATE → <span class="mono">INPUTx_GATE</span></td></tr>
+        <tr><td><span class="tag keep">Keep</span></td><td class="mono">Q3, Q1</td><td class="mono">Q4, Q2</td><td>IPT015N10N5</td><td>Placement and orientation unchanged (Q3/Q4 switch, Q1/Q2 ideal diode)</td></tr>
+        <tr><td><span class="tag keep">Keep</span></td><td class="mono">C35</td><td class="mono">C36</td><td>100nF</td><td><span class="mono">VINx_ANODE</span> decoupling</td></tr>
+        <tr><td><span class="tag keep">Keep</span></td><td class="mono">D1</td><td class="mono">D2</td><td>SMBJ58A</td><td>Input TVS, as close to the IN pin as possible</td></tr>
+        <tr><td><span class="tag opt">Optional DNP</span></td><td class="mono">R4, C1</td><td class="mono">R4', C1'</td><td>10kΩ in series with 10nF</td><td>GATE-to-GND soft start, inrush I = 10µA × C<sub>load</sub> ÷ C1; reserve the pads for now</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">The designators of the added parts (R_SD, R_PD, D_Z, R_G, R4/C1) are placeholders only. In EasyEDA, continue the existing numbering and avoid designators already in use such as R102.</p>
+</section>
+
+<section>
+  <h2><span class="num">5</span>Datasheet cross-check</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Item</th><th>Datasheet</th><th>This board</th><th class="mono">Page</th></tr></thead>
+      <tbody>
+        <tr><td>Operating voltage</td><td class="mono">4–80V</td><td>48V EPR (max about 50.4V) has margin</td><td class="mono">1, 3</td></tr>
+        <tr><td>Absolute maximum</td><td>IN / SOURCE / SHDN / OUT 100V; IN−SOURCE 80V</td><td>SMBJ58A high-current clamp about 93V, margin about 7V</td><td class="mono">2</td></tr>
+        <tr><td>Gate drive</td><td>GATE−SOURCE 10–15V, internal 15V clamp</td><td>MOSFET Vgs rating ±20V; a 12V Zener is still added per the datasheet</td><td class="mono">3, 7</td></tr>
+        <tr><td>SHDN threshold</td><td>Off &lt;0.6V, on &gt;2V; about 1.75V when floating (internal pull-up 2.6µA, max 5µA)</td><td>47k × 5µA = 0.235V, guaranteed off; a 3.3V GPIO can turn it on</td><td class="mono">3, 5</td></tr>
+        <tr><td>Turn-on current</td><td>Gate pull-up 10µA</td><td>Total gate charge of both MOSFETs about 300nC, fully on in about 30ms</td><td class="mono">3</td></tr>
+        <tr><td>Turn-off current</td><td>SHDN turn-off ≥0.6mA; fast pull-down on reverse current ≥70mA, 0.3µs</td><td>SHDN turn-off about 0.5ms; ORing reverse-current blocking is unaffected</td><td class="mono">3</td></tr>
+        <tr><td>Ideal diode</td><td>Forward regulation 30mV; both MOSFETs stay off when IN &lt; OUT + 30mV</td><td>ORing behavior same as the original design</td><td class="mono">6, 11</td></tr>
+        <tr><td>Input-side MOSFET gate resistor</td><td>Figure 6 / 12 require 10Ω close to the MOSFET</td><td>Add R_G1 / R_G2</td><td class="mono">11</td></tr>
+        <tr><td>OUT pin protection</td><td>≥1.5µF, or 47nF plus a TVS across the MOSFET</td><td>VOUT already has 2×220µF and 2×1µF; confirm one is close to the OUT pin</td><td class="mono">9</td></tr>
+        <tr><td>Package</td><td>DFN needs attention to creepage above 30V</td><td>Choose MSOP-8: high-voltage pins 4 and 8 are flanked only by NC or low-voltage pins</td><td class="mono">11</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">6</span>Still to confirm before the board revision</h2>
+  <ul class="checks">
+    <li><span>Temperature</span><p>LTC4359<b>C</b>MS8 is rated 0–70°C. If it will be used below 0°C or in a hot enclosure, use LTC4359<b>I</b>MS8 (−40–85°C) instead.</p></li>
+    <li><span>Turn-on</span><p>Driving two IPT015N10N5 with 10µA takes about 30ms. If a heavy load is already present at turn-on, the MOSFETs will dwell in the linear region and the SOA must be checked; alternatively, use a 3–5mΩ 100V MOSFET with lower gate charge.</p></li>
+    <li><span>TVS</span><p>Place D1/D2 as close to the IN pin of U1 as possible with short traces, so that a surge does not reach 100V before it is clamped.</p></li>
+    <li><span>SHDN</span><p>Route SHDN away from high dv/dt traces such as SPI and switching regulators; place C01/C18 next to U1.</p></li>
+    <li><span>Firmware</span><p>LMx_EN polarity is inverted: after the revision <b>high = on</b> (current board: high = off). The firmware will add a polarity macro in <span class="mono">board.h</span>; just switch it when changing boards.</p></li>
+  </ul>
+</section>
+
+<footer>Based on the LTC4359 datasheet Rev.E (LCSC C688235). The datasheet text is authoritative for pinouts and parameters.</footer>
+
+</div>

@@ -1,0 +1,23 @@
+# Local branch of a third-party project (JohnScotttt/USB_PD_Trigger), superseded by X035Pd, not included in this repository
+USB_PD_Trigger/
+
+# Build artifacts and editor settings
+.pio/
+.vscode/
+.claude/
+compile_commands.json
+__pycache__/
+*.pyc
+
+# Third-party font (SIL OFL 1.1), download it yourself, see MainCtrl/tools/fonts/README.md
+MainCtrl/tools/fonts/*.ttf
+
+# FreeCAD backups
+*.FCStd1
+*.FCBak
+
+# The repository only holds the English copy of the LTC4359 LCEDA project (ProPrj_48V10+10A ORing_2026-10-10_en.epro2);
+# the original and the other versions stay local only
+ProPrj_48V10+10A ORing_2026-09-26.epro2
+ProPrj_48V10+10A ORing_2026-10-10.epro2
+ProPrj_48V10+10A ORing_copy_2026-10-29.epro2

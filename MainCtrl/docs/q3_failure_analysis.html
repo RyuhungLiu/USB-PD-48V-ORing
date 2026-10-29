@@ -1,0 +1,806 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head><body><title>Q3 Breakdown Analysis</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: single-column engineering report with side margins; the virtual layout is drawn on a green PCB solder-mask background that stays fixed in both themes (real-world colors) */
+:root {
+  --bg: #f1f4f1;
+  --surface: #ffffff;
+  --ink: #16201b;
+  --ink-2: #47524c;
+  --muted: #758079;
+  --rule: #d5ddd7;
+  --accent: #1d6a50;
+  --accent-soft: #e2efe9;
+  --s1: #2a78d6;      /* IPT015N10N5 */
+  --s2: #eb6834;      /* IPT059N15N3 */
+  --good: #2b8a46;
+  --warn: #b77a00;
+  --bad: #cf3a3a;
+  --good-bg: #e3f2e7;
+  --warn-bg: #fbefd2;
+  --bad-bg: #fae2e0;
+  --grid: #e6ebe7;
+  --pcb: #0e3a2c;
+  --pcb-2: #12483a;
+  --cu: #c58a4f;
+  --cu-dim: #7f5c39;
+  --silk: #eaf1ec;
+  --pad: #d8b47a;
+  --flow: #ffd34d;
+  --hot: #ff5a3c;
+  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-disp: "IBM Plex Sans Condensed", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111814; --surface: #19221d; --ink: #e7eee9; --ink-2: #b3bfb8; --muted: #849089; --rule: #2b3731;
+    --accent: #57b893; --accent-soft: #1d3029; --s1: #3987e5; --s2: #d95926;
+    --good: #4fb56b; --warn: #d9a02b; --bad: #e66767; --good-bg: #1c3324; --warn-bg: #3a2f14; --bad-bg: #3d1f1f;
+    --grid: #233029; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111814; --surface: #19221d; --ink: #e7eee9; --ink-2: #b3bfb8; --muted: #849089; --rule: #2b3731;
+  --accent: #57b893; --accent-soft: #1d3029; --s1: #3987e5; --s2: #d95926;
+  --good: #4fb56b; --warn: #d9a02b; --bad: #e66767; --good-bg: #1c3324; --warn-bg: #3a2f14; --bad-bg: #3d1f1f;
+  --grid: #233029; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.7; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { text-wrap: balance; line-height: 1.3; margin: 0; }
+h1 { font-family: var(--font-disp); font-size: clamp(28px, 4.2vw, 40px); font-weight: 600; letter-spacing: .01em; }
+h2 { font-size: 21px; font-weight: 700; }
+h3 { font-size: 16px; font-weight: 700; }
+p { margin: 0; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+header.top { display: grid; gap: 10px; padding-bottom: 22px; border-bottom: 1px solid var(--rule); }
+header.top .meta { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink-2); font-size: 13px; }
+section { padding-top: 40px; display: grid; gap: 16px; }
+.sec-head { display: grid; gap: 4px; }
+.sec-head p { color: var(--ink-2); max-width: 70ch; }
+.verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.vcard { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 18px 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.vcard .q { font-size: 13px; color: var(--muted); }
+.vcard .a { font-size: 19px; font-weight: 700; line-height: 1.45; }
+.vcard ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; color: var(--ink-2); }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip.good { color: var(--good); background: var(--good-bg); }
+.chip.warn { color: var(--warn); background: var(--warn-bg); }
+.chip.bad { color: var(--bad); background: var(--bad-bg); }
+.chip.info { color: var(--accent); background: var(--accent-soft); }
+
+/* Virtual layout */
+.layout-shell { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .layout-shell { grid-template-columns: 1fr; } }
+.board-box { background: var(--pcb); border-radius: 10px; padding: 10px; overflow-x: auto; }
+.board-box svg { display: block; width: 100%; min-width: 760px; height: auto; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.tab[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.tab:focus-visible, .comp:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.panel .k { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.panel h3 { font-size: 17px; }
+.panel dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: 13px; }
+.panel dt { color: var(--muted); }
+.panel dd { margin: 0; }
+.panel .note { font-size: 13px; color: var(--ink-2); }
+.scen-desc { color: var(--ink-2); font-size: 14px; max-width: 80ch; }
+svg .comp { cursor: pointer; }
+svg .comp:hover .body, svg .comp.sel .body { stroke: var(--flow); stroke-width: 2.5; }
+svg text { font-family: var(--font-mono); }
+.flow { fill: none; stroke: var(--flow); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 10 12; animation: dash 0.9s linear infinite; opacity: .95; }
+.flow.slow { animation-duration: 2.4s; stroke-width: 3; }
+.flow.leak { stroke: var(--hot); }
+@keyframes dash { to { stroke-dashoffset: -22; } }
+@media (prefers-reduced-motion: reduce) { .flow { animation: none; } }
+.heat { fill: var(--hot); opacity: 0; transition: opacity .3s; filter: blur(10px); }
+
+/* Timeline */
+.tl { display: grid; gap: 0; border-left: 2px solid var(--rule); margin-left: 6px; }
+.tl .ev { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; padding: 10px 0 10px 18px; position: relative; }
+.tl .ev::before { content: ""; position: absolute; left: -7px; top: 17px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--muted); }
+.tl .ev.bad::before { border-color: var(--bad); background: var(--bad); }
+.tl .ev.warn::before { border-color: var(--warn); }
+.tl .ev.fix::before { border-color: var(--good); }
+.tl .when { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); padding-top: 2px; }
+.tl .what { font-size: 14px; }
+.tl .what b { font-weight: 700; }
+@media (max-width: 560px) { .tl .ev { grid-template-columns: 1fr; gap: 2px; } }
+
+/* Simulator */
+.sim { display: grid; gap: 16px; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 18px; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px; }
+.ctl { display: grid; gap: 4px; font-size: 13px; }
+.ctl label { color: var(--ink-2); display: flex; justify-content: space-between; gap: 8px; }
+.ctl output { font-family: var(--font-mono); color: var(--ink); }
+.ctl input[type="range"] { width: 100%; accent-color: var(--accent); }
+.ctl select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); }
+.ctl .chk { display: flex; gap: 6px; align-items: center; color: var(--ink-2); }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.mcard { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px; display: grid; gap: 8px; min-width: 0; }
+.mcard .hd { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.mcard .name { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-weight: 500; }
+.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.mcard .big { font-family: var(--font-disp); font-size: 34px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.mcard .big small { font-size: 14px; font-weight: 500; color: var(--muted); margin-left: 6px; }
+.mcard dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; margin: 0; }
+.mcard dt { font-size: 11.5px; color: var(--muted); }
+.mcard dd { margin: 0; font-family: var(--font-mono); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px; }
+.chart { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 12px 12px 6px; position: relative; min-width: 0; }
+.chart h3 { font-size: 14px; }
+.chart .sub { font-size: 12px; color: var(--muted); }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); padding-top: 4px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 12px; font-family: var(--font-mono); padding: 6px 8px; border-radius: 6px; white-space: nowrap; transform: translate(-50%, -110%); line-height: 1.5; }
+.busy { font-size: 12px; color: var(--muted); }
+
+/* Tables */
+.tbl-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 500; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rank { font-family: var(--font-disp); font-weight: 600; font-size: 18px; color: var(--muted); }
+.cols2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.list { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.callout { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 14px; }
+.fine { font-size: 12.5px; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">48V10+10A ORing · REV2 · CH1 · 2026-10-22</div>
+    <h1>Q3 Breakdown Analysis</h1>
+    <p style="max-width:72ch;color:var(--ink-2)">The CH1 VIN-side MOSFET (Q3, IPT015N10N5) has failed with a D-S short for the second time. This page collects the evidence, uses a calibrated step model to recompute the stress of each type of event, compares it against the datasheet SOA, and evaluates the effect of switching to the IPT059N15N3ATMA1.</p>
+    <div class="meta">
+      <span>Controller <b class="mono">U1 LTC4359</b></span>
+      <span>Q3/Q1 <b class="mono">IPT015N10N5 ×2 (back-to-back)</b></span>
+      <span>VOUT bleeder <b class="mono">1 kΩ</b></span>
+      <span>Input protection <b class="mono">SMCJ54A + 100 µF</b></span>
+    </div>
+  </header>
+
+  <section aria-labelledby="s-verdict">
+    <div class="sec-head"><div class="eyebrow">Conclusion</div><h2 id="s-verdict">Answers to the two questions</h2></div>
+    <div class="verdict">
+      <div class="vcard">
+        <div class="q">Why did Q3 break down?</div>
+        <div class="a">At turn-on it takes power beyond its SOA in the linear region. When VOUT is far below VIN, the LTC4359 charges the gate slowly with only 10 µA, and Q3 has to pass current across a 15–30 V drop for several ms.</div>
+        <ul>
+          <li>The worst case is a <b>V203 warm restart</b>: with the 1 kΩ bleeder added, VOUT has already discharged to about 2 V after 1.4 s off, and when the path is turned back on Q3 uses about <b>85–109 % of SOA</b> in a single event. During flashing and watchdog resets the charger was observed being pulled down to 36 V three times.</li>
+          <li>In the back-to-back arrangement only the VIN-side device must conduct "through its channel"; the VOUT-side device can conduct through its parasitic diode, so the failure is always on the VIN side (CH1 Q3 twice, CH2 VIN side once).</li>
+          <li>The IPT015N10N5 (OptiMOS 5) has a very weak SOA in the 20–30 V range: 30 V / 10 ms allows only 2.1 A.</li>
+        </ul>
+      </div>
+      <div class="vcard">
+        <div class="q">Does switching to the IPT059N15N3ATMA1 fix it for good?</div>
+        <div class="a">It greatly reduces the risk, but it is not a root fix. The same warm-restart event drops from 109 % to 19 %, about 5x margin; the trigger mechanism (slow gate, no inrush control) is unchanged.</div>
+        <ul>
+          <li>SOA at 30 V: 52 A for 1 ms and 16 A for 10 ms, 6–8x the current part; gate charge 69 nC, about 2/5, so less time in the linear region; 150 V rating.</li>
+          <li>Cost: on-resistance 5.1 mΩ, about 0.26 W for the two devices per channel at 5 A (current part 0.07 W).</li>
+          <li>Combined with the immediate warm-restart recovery in v0.0.83 (VOUT dip &lt; 0.25 V), the observed failure path is removed. A true root fix requires adding inrush control in the board revision.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-layout">
+    <div class="sec-head">
+      <div class="eyebrow">Virtual layout</div>
+      <h2 id="s-layout">CH1 power path</h2>
+      <p>Component placement and connections reconstructed from the REV2 schematic netlist (ProPrj 2026-10-10); not to scale with the actual routing. Click a component to see its role and stress; switch scenarios to see the current path and where heat is generated.</p>
+    </div>
+    <div class="tabs" role="group" aria-label="Scenario">
+      <button class="tab" id="tab-normal" data-scen="normal" aria-pressed="true">Normal conduction</button>
+      <button class="tab" id="tab-inrush" data-scen="inrush" aria-pressed="false">Warm restart / cold-start inrush</button>
+      <button class="tab" id="tab-off" data-scen="off" aria-pressed="false">EN off</button>
+      <button class="tab" id="tab-failed" data-scen="failed" aria-pressed="false">After Q3 breakdown (current state)</button>
+    </div>
+    <p class="scen-desc" id="scen-desc"></p>
+    <div class="layout-shell">
+      <div class="board-box">
+        <svg id="board" viewBox="0 0 1100 470" role="img" aria-label="CH1 power path virtual layout">
+          <defs>
+            <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="8" stroke="#1b5a46" stroke-width="2"></line>
+            </pattern>
+          </defs>
+          <rect x="0" y="0" width="1100" height="470" rx="10" fill="#0e3a2c"></rect>
+          <rect x="10" y="400" width="1080" height="58" rx="6" fill="url(#hatch)" opacity=".7"></rect>
+          <text x="22" y="452" fill="#9fc2b2" font-size="11">GND pour (illustrative)</text>
+
+          <!-- Copper nets -->
+          <g fill="#c58a4f" opacity=".92">
+            <rect x="96" y="134" width="164" height="32" rx="3"></rect>                <!-- VIN_48V_1 -->
+            <rect x="300" y="128" width="64" height="44" rx="3"></rect>                <!-- VIN1_ANODE -->
+            <rect x="452" y="128" width="78" height="44" rx="3"></rect>                <!-- SRC1 -->
+            <rect x="618" y="118" width="330" height="64" rx="4"></rect>               <!-- VOUT_48V -->
+            <rect x="948" y="128" width="30" height="44" rx="3"></rect>
+            <rect x="700" y="182" width="26" height="218" rx="3" opacity=".55"></rect> <!-- CH2 merge -->
+          </g>
+          <!-- Thin traces -->
+          <g fill="none" stroke="#c58a4f" stroke-width="3" stroke-linecap="round" opacity=".9">
+            <path d="M332 172 V232 H404"></path>                         <!-- VIN1_ANODE → U1 IN -->
+            <path d="M491 172 V232 H470"></path>                         <!-- SRC1 → U1 SOURCE -->
+            <path d="M660 182 V296 H470"></path>                         <!-- VOUT → U1 OUT -->
+            <path d="M404 266 H370 V330 H420"></path>                    <!-- U1 GATE → R11 -->
+            <path d="M458 330 H520 V196 H560"></path>                    <!-- INPUT1_GATE → Q1 G -->
+            <path d="M520 330 H540"></path>
+            <path d="M458 330 H468"></path>
+            <path d="M386 196 V214 H346 V330"></path>                    <!-- Q3 G ← R15 -->
+            <path d="M520 284 H544"></path>                              <!-- D5 to gate node -->
+            <path d="M491 232 V250"></path>
+            <path d="M404 288 H250 V336"></path>                         <!-- SHDN# -->
+            <path d="M332 172 V196 H300 V372"></path>                    <!-- D3 to buck -->
+            <path d="M232 166 V100"></path>
+            <path d="M200 134 V100"></path>
+          </g>
+          <!-- Labels -->
+          <g fill="#eaf1ec" font-size="10.5">
+            <text x="104" y="128">VIN_48V_1</text>
+            <text x="302" y="122">VIN1_ANODE</text>
+            <text x="458" y="122">SRC1</text>
+            <text x="790" y="112">VOUT_48V</text>
+            <text x="528" y="346">INPUT1_GATE</text>
+            <text x="732" y="296" fill="#9fc2b2">CH2 merge (Q4/Q2, U2)</text>
+          </g>
+
+          <!-- Components -->
+          <g class="comp" data-id="J1" tabindex="0" role="button" aria-label="USB-C input">
+            <rect class="body" x="22" y="118" width="74" height="64" rx="10" fill="#2d3a35" stroke="#9fb5aa" stroke-width="1.5"></rect>
+            <rect x="34" y="138" width="50" height="24" rx="10" fill="#111"></rect>
+            <text x="30" y="196" fill="#eaf1ec" font-size="11">USB-C CH1</text>
+          </g>
+          <g class="comp" data-id="TVS" tabindex="0" role="button" aria-label="TVS SMCJ54A">
+            <rect class="body" x="182" y="70" width="36" height="30" rx="3" fill="#24302c" stroke="#9fb5aa" stroke-width="1.5"></rect>
+            <rect x="182" y="70" width="6" height="30" fill="#c9c9c9"></rect>
+            <text x="172" y="62" fill="#eaf1ec" font-size="10.5">SMCJ54A</text>
+          </g>
+          <g class="comp" data-id="CIN" tabindex="0" role="button" aria-label="Input capacitor 100 microfarad">
+            <circle class="body" cx="236" cy="82" r="18" fill="#1c2b4a" stroke="#9fb5aa" stroke-width="1.5"></circle>
+            <path d="M222 72 A18 18 0 0 1 250 72" fill="none" stroke="#c9d6e8" stroke-width="3"></path>
+            <text x="222" y="58" fill="#eaf1ec" font-size="10.5">100µF</text>
+          </g>
+          <g class="comp" data-id="RS" tabindex="0" role="button" aria-label="Shunt resistor and INA237">
+            <rect class="body" x="252" y="138" width="56" height="24" rx="2" fill="#222" stroke="#9fb5aa" stroke-width="1.5"></rect>
+            <text x="258" y="154" fill="#eaf1ec" font-size="10">10mΩ</text>
+            <rect x="262" y="86" width="40" height="30" rx="2" fill="#1d1d1d" stroke="#9fb5aa" stroke-width="1"></rect>
+            <text x="266" y="105" fill="#eaf1ec" font-size="9.5">U4</text>
+            <text x="246" y="80" fill="#9fc2b2" font-size="9.5">INA237</text>
+          </g>
+          <g class="comp" data-id="Q3" tabindex="0" role="button" aria-label="Q3 VIN-side MOSFET">
+            <ellipse class="heat" id="heat-q3" cx="410" cy="150" rx="60" ry="46"></ellipse>
+            <rect class="body" x="364" y="110" width="94" height="80" rx="4" fill="#1a1a1a" stroke="#9fb5aa" stroke-width="1.5"></rect>
+            <rect x="364" y="110" width="20" height="80" fill="#d8b47a" opacity=".85"></rect>
+            <text x="392" y="132" fill="#eaf1ec" font-size="13" font-weight="500">Q3</text>
+            <text x="392" y="148" fill="#9fc2b2" font-size="9.5">VIN side</text>
+            <path d="M444 166 L420 166 M428 158 L428 174 L420 166 Z" stroke="#ffb58f" fill="#ffb58f" stroke-width="1.5"></path>
+            <text x="392" y="184" fill="#9fc2b2" font-size="9">D←S body diode</text>
+            <text x="368" y="206" fill="#eaf1ec" font-size="9.5">D</text><text x="440" y="206" fill="#eaf1ec" font-size="9.5">S·G</text>
+          </g>
+          <g class="comp" data-id="Q1" tabindex="0" role="button" aria-label="Q1 VOUT-side MOSFET">
+            <ellipse class="heat" id="heat-q1" cx="576" cy="150" rx="60" ry="46"></ellipse>
+            <rect class="body" x="528" y="110" width="94" height="80" rx="4" fill="#1a1a1a" stroke="#9fb5aa" stroke-width="1.5"></rect>
+            <rect x="602" y="110" width="20" height="80" fill="#d8b47a" opacity=".85"></rect>
+            <text x="540" y="132" fill="#eaf1ec" font-size="13" font-weight="500">Q1</text>
+            <text x="540" y="148" fill="#9fc2b2" font-size="9.5">VOUT side</text>
+            <path d="M542 166 L566 166 M558 158 L558 174 L566 166 Z" stroke="#9fd0ff" fill="#9fd0ff" stroke-width="1.5"></path>
+            <text x="540" y="184" fill="#9fc2b2" font-size="9">S→D body diode</text>
+            <text x="532" y="206" fill="#eaf1ec" font-size="9.5">S·G</text><text x="608" y="206" fill="#eaf1ec" font-size="9.5">D</text>
+          </g>
+          <g class="comp" data-id="U1" tabindex="0" role="button" aria-label="U1 LTC4359">
+            <rect class="body" x="404" y="222" width="66" height="84" rx="3" fill="#1a1a1a" stroke="#9fb5aa" stroke-width="1.5"></rect>
+            <text x="414" y="244" fill="#eaf1ec" font-size="12" font-weight="500">U1</text>
+            <text x="410" y="260" fill="#9fc2b2" font-size="9">LTC4359</text>
+            <text x="410" y="236" fill="#9fc2b2" font-size="8">IN  SRC</text>
+            <text x="410" y="274" fill="#9fc2b2" font-size="8">GATE</text>
+            <text x="410" y="290" fill="#9fc2b2" font-size="8">SHDN  OUT</text>
+          </g>
+          <g class="comp" data-id="R11" tabindex="0" role="button" aria-label="R11 0 ohm">
+            <rect class="body" x="420" y="322" width="38" height="16" rx="2" fill="#222" stroke="#9fb5aa" stroke-width="1.2"></rect>
+            <text x="422" y="361" fill="#eaf1ec" font-size="9.5">R11 0Ω</text>
+          </g>
+          <g class="comp" data-id="R15" tabindex="0" role="button" aria-label="R15 10 ohm">
+            <rect class="body" x="334" y="236" width="24" height="40" rx="2" fill="#222" stroke="#9fb5aa" stroke-width="1.2"></rect>
+            <text x="300" y="292" fill="#eaf1ec" font-size="9.5">R15 10Ω</text>
+          </g>
+          <g class="comp" data-id="D5" tabindex="0" role="button" aria-label="D5 12 volt Zener">
+            <rect class="body" x="544" y="276" width="34" height="16" rx="2" fill="#2a2a2a" stroke="#9fb5aa" stroke-width="1.2"></rect>
+            <rect x="544" y="276" width="5" height="16" fill="#c9c9c9"></rect>
+            <path d="M578 284 H600 V196" fill="none" stroke="#c58a4f" stroke-width="3"></path>
+            <text x="582" y="304" fill="#eaf1ec" font-size="9.5">D5 12V</text>
+          </g>
+          <g class="comp" data-id="EN" tabindex="0" role="button" aria-label="R14 R12 C30 and LM1_EN">
+            <rect class="body" x="226" y="336" width="48" height="30" rx="2" fill="#222" stroke="#9fb5aa" stroke-width="1.2"></rect>
+            <text x="230" y="355" fill="#eaf1ec" font-size="9">R14 R12</text>
+            <text x="196" y="384" fill="#9fc2b2" font-size="9.5">LM1_EN ← V203 PB9</text>
+          </g>
+          <g class="comp" data-id="D3" tabindex="0" role="button" aria-label="D3 SS110 and 3V3 buck">
+            <rect class="body" x="284" y="372" width="34" height="20" rx="2" fill="#2a2a2a" stroke="#9fb5aa" stroke-width="1.2"></rect>
+            <text x="288" y="386" fill="#eaf1ec" font-size="9">D3</text>
+            <text x="326" y="388" fill="#9fc2b2" font-size="9.5">→ U5 3V3 (V203, X035)</text>
+          </g>
+          <g class="comp" data-id="COUT" tabindex="0" role="button" aria-label="Output capacitors">
+            <circle class="body" cx="676" cy="150" r="22" fill="#1c2b4a" stroke="#9fb5aa" stroke-width="1.5"></circle>
+            <circle cx="744" cy="150" r="22" fill="#1c2b4a" stroke="#9fb5aa" stroke-width="1.5"></circle>
+            <circle cx="812" cy="150" r="18" fill="#1c2b4a" stroke="#9fb5aa" stroke-width="1.5"></circle>
+            <text x="650" y="200" fill="#eaf1ec" font-size="9.5">C21  C22  +220µF</text>
+          </g>
+          <g class="comp" data-id="RBL" tabindex="0" role="button" aria-label="1 kilohm bleeder resistor">
+            <rect class="body" x="866" y="132" width="44" height="36" rx="3" fill="#3a2a1a" stroke="#9fb5aa" stroke-width="1.5"></rect>
+            <text x="872" y="154" fill="#eaf1ec" font-size="10">1kΩ</text>
+            <text x="858" y="196" fill="#9fc2b2" font-size="9.5">Bleeder 2.3W</text>
+          </g>
+          <g class="comp" data-id="XT60" tabindex="0" role="button" aria-label="XT60 output">
+            <rect class="body" x="978" y="112" width="92" height="76" rx="8" fill="#c9a227" stroke="#9fb5aa" stroke-width="1.5"></rect>
+            <circle cx="1004" cy="150" r="10" fill="#6b5410"></circle>
+            <circle cx="1044" cy="150" r="10" fill="#6b5410"></circle>
+            <text x="996" y="206" fill="#eaf1ec" font-size="11">XT60 output</text>
+          </g>
+
+          <!-- Current paths (shown per scenario) -->
+          <g id="flows"></g>
+          <!-- Voltage-drop label -->
+          <g id="vds-tag" opacity="0">
+            <rect x="372" y="62" width="160" height="26" rx="4" fill="#ff5a3c"></rect>
+            <text id="vds-text" x="380" y="80" fill="#fff" font-size="12" font-weight="500">VDS(Q3) 15–30 V</text>
+          </g>
+        </svg>
+      </div>
+      <aside class="panel" id="panel" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-tl">
+    <div class="sec-head"><div class="eyebrow">Evidence</div><h2 id="s-tl">Timeline of failures and stress events</h2>
+      <p>Only events that were logged or measured are listed. Red dots are damage, yellow dots are confirmed inrush or overload, green dots are countermeasures.</p></div>
+    <div class="tl">
+      <div class="ev bad"><div class="when">10-21 morning</div><div class="what"><b>First CH1 Q3 breakdown.</b> Both switches on; no-load drop 0.44 V, 0.74 V at 2 A, VOUT-side MOSFET heating up (conducting through its parasitic diode). User replaced Q3. Firmware v0.0.78 added OFF LEAK / PATH DROP.</div></div>
+      <div class="ev bad"><div class="when">10-21</div><div class="what"><b>CH2 VIN-side MOSFET damaged</b>, replaced. Afterwards an SMCJ54A TVS and a 100 V 100 µF capacitor were added to each input.</div></div>
+      <div class="ev warn"><div class="when">10-21 afternoon</div><div class="what"><b>Cold-start step investigation.</b> DYN falsely triggered a 0→6A cold step and both chargers dropped out at once; without a bleeder, 0→2A: VOUT fell by more than 22 V for over 5 ms.</div></div>
+      <div class="ev fix"><div class="when">10-21 evening</div><div class="what"><b>2 kΩ bleeder added on VOUT, later changed to 1 kΩ.</b> Cold-step drop reduced to 1.02 V (0→4A). It also makes VOUT discharge with a 0.43 s time constant after turn-off, which made warm-restart inrush worse.</div></div>
+      <div class="ev warn"><div class="when">10-22 v0.0.82 flash</div><div class="what">1.25 s after boot <b>CH2 input 36.0 V</b> (VOLTAGE shutdown), DETACH and reconnect 2.6 s later.</div></div>
+      <div class="ev warn"><div class="when">10-22 IWDG reset</div><div class="what">1.42 s after boot <b>CH1 input 36.08 V</b>, charger DETACH and renegotiation.</div></div>
+      <div class="ev warn"><div class="when">10-22 v0.0.83 flash</div><div class="what">1.49 s after boot <b>CH1 input 35.76 V</b>. This was the last restart using the old flow.</div></div>
+      <div class="ev fix"><div class="when">10-22 v0.0.83–84</div><div class="what"><b>Warm restart restores conduction immediately</b> (turned on per the saved record within a few ms of boot). During verification there were 4 <span class="mono">wlink reset</span>s, where the CPU was halted for about 0.4 s and VOUT dropped to about 19 V before the restart; with a firmware software reset the measured VOUT dip was &lt; 0.25 V.</div></div>
+      <div class="ev"><div class="when">10-22 learning test</div><div class="what">1→7A staircase and MANUAL comparison both normal; CH1 shared up to 3.3 A.</div></div>
+      <div class="ev bad"><div class="when">10-22 NORMAL test</div><div class="what">After about 1 s at 2 A steady state <b>VOUT 47.77 → 39.63 V</b>, the whole board lost power and restarted (cause not fully determined, possibly the moment Q3 failed). On the rerun CH2 was already lowered by 500 mV but <b>CH1 still only had 6 mA</b> → PATH DROP latch; at 7A CH2 OCP XFER.</div></div>
+      <div class="ev bad"><div class="when">10-22 confirmation</div><div class="what">With both EN off, CH1 still supplies 48 mA (bleeder current), VIN−VOUT = 0.55 V: <b>Q3 D-S short</b>, with current flowing through the Q1 parasitic diode.</div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-sim">
+    <div class="sec-head"><div class="eyebrow">Stress simulator</div><h2 id="s-sim">How much SOA Q3 uses in each event</h2>
+      <p>Model: LTC4359 gate charged by IGATE, piecewise gate charge and Miller capacitance of both MOSFETs, square-law channel, VOUT-side parasitic diode, 100 µF input capacitor, charger internal resistance 0.09 Ω with current limit, 435 µF output. Calibrated against oscilloscope measurements (2 kΩ bleeder 0→2A drop 2.79 V / no bleeder VOUT 25.3 V). Both MOSFETs are computed simultaneously.</p></div>
+    <div class="sim">
+      <div class="presets" role="group" aria-label="Preset scenarios">
+        <button class="tab" data-preset="warm1k" aria-pressed="true">Warm restart · 1k · off 1.4 s</button>
+        <button class="tab" data-preset="warm2k" aria-pressed="false">Warm restart · 2k</button>
+        <button class="tab" data-preset="wlink" aria-pressed="false">wlink reset (halted 0.4 s)</button>
+        <button class="tab" data-preset="cold2n" aria-pressed="false">Cold start 0→2A, no bleeder</button>
+        <button class="tab" data-preset="cold5" aria-pressed="false">Cold start 0→5A · 1k</button>
+        <button class="tab" data-preset="cold7" aria-pressed="false">Cold start 0→7A · 1k</button>
+      </div>
+      <div class="controls">
+        <div class="ctl">
+          <label for="c-vout0">VOUT before event <output id="o-vout0"></output></label>
+          <input type="range" id="c-vout0" min="0" max="47" step="0.5" value="1.9">
+          <span class="chk"><input type="checkbox" id="c-steady"><label for="c-steady" style="display:inline">Steady state (cold-start step)</label></span>
+        </div>
+        <div class="ctl">
+          <label for="c-istep">Load step <output id="o-istep"></output></label>
+          <input type="range" id="c-istep" min="0" max="8" step="0.5" value="0">
+        </div>
+        <div class="ctl">
+          <label for="c-rbl">VOUT bleeder resistor</label>
+          <select id="c-rbl"><option value="0">None</option><option value="2000">2 kΩ</option><option value="1000" selected>1 kΩ</option></select>
+        </div>
+        <div class="ctl">
+          <label for="c-ilim">Charger current limit</label>
+          <select id="c-ilim"><option value="6">6 A</option><option value="10" selected>10 A</option><option value="0">Unlimited (0.09 Ω internal resistance only)</option></select>
+        </div>
+        <div class="ctl">
+          <label for="c-iup">LTC4359 IGATE(UP)</label>
+          <select id="c-iup"><option value="6e-6">6 µA (min)</option><option value="10e-6" selected>10 µA (typ)</option><option value="14e-6">14 µA (max)</option></select>
+        </div>
+      </div>
+      <div class="metrics" id="metrics"></div>
+      <div class="charts">
+        <div class="chart" id="ch-vout"><h3>VOUT</h3><div class="sub">V, event starts at 0 ms</div><svg viewBox="0 0 420 230" aria-label="VOUT waveform"></svg>
+          <div class="legend"><span><i style="background:var(--s1)"></i>IPT015N10N5</span><span><i style="background:var(--s2)"></i>IPT059N15N3</span></div></div>
+        <div class="chart" id="ch-p"><h3>Q3 power dissipation</h3><div class="sub">W, VDS × ID (VIN-side MOSFET channel)</div><svg viewBox="0 0 420 230" aria-label="Q3 power dissipation waveform"></svg>
+          <div class="legend"><span><i style="background:var(--s1)"></i>IPT015N10N5</span><span><i style="background:var(--s2)"></i>IPT059N15N3</span></div></div>
+        <div class="chart" id="ch-soa"><h3>SOA comparison</h3><div class="sub">log-log; solid = trajectory, dashed = that device's SOA limit at the equivalent pulse width, dot = equivalent rectangular pulse</div><svg viewBox="0 0 420 260" aria-label="SOA comparison chart"></svg>
+          <div class="legend"><span><i style="background:var(--s1)"></i>IPT015N10N5</span><span><i style="background:var(--s2)"></i>IPT059N15N3</span></div></div>
+      </div>
+      <p class="fine">The SOA is read from the image of datasheet Diagram 3 (Tc = 25 °C, single pulse), with an error of about ±10 %; when the actual case temperature is above 25 °C the allowed values are lower. The equivalent pulse takes the period where dissipation exceeds 10 % of the peak, using the average VDS and ID; the SOA limit is interpolated in log(pulse width) between the 100 µs / 1 ms / 10 ms / DC curves. The model is conservative for cold steps with a bleeder resistor (1k 0→5A measured drop 2.13 V, model about 4.5 V).</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-table">
+    <div class="sec-head"><div class="eyebrow">Per scenario</div><h2 id="s-table">Preset scenario summary</h2><p>Charger current limit 10 A, IGATE 10 µA. Utilization = equivalent pulse current ÷ SOA-allowed current at that pulse width.</p></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Scenario</th><th>IPT015N10N5</th><th>Equivalent pulse (015)</th><th>IPT059N15N3</th><th>Equivalent pulse (059)</th><th>Actually occurred</th></tr></thead>
+        <tbody>
+          <tr><td>Warm restart · 1k bleeder · off 1.4 s</td><td><span class="chip bad">109 %</span></td><td class="num">2.6 ms · 27 V · 6.6 A</td><td><span class="chip good">19 %</span></td><td class="num">0.9 ms · 30 V · 10.1 A</td><td>v0.0.81–83 flashing, IWDG reset; charger pulled to 36 V three times</td></tr>
+          <tr><td>Warm restart · 1k · charger 6 A limit</td><td><span class="chip warn">85 %</span></td><td class="num">2.8 ms · 25 V · 5.7 A</td><td><span class="chip good">14 %</span></td><td class="num">0.9 ms · 30 V · 7.9 A</td><td>Same as above (charger with a lower current limit)</td></tr>
+          <tr><td>Warm restart · 2k bleeder</td><td><span class="chip warn">64 %</span></td><td class="num">2.4 ms · 22 V · 6.0 A</td><td><span class="chip good">14 %</span></td><td class="num">0.9 ms · 25 V · 9.6 A</td><td>Flashing during the 2k period on the evening of 10-21</td></tr>
+          <tr><td>wlink reset · 1k · halted 0.4 s</td><td><span class="chip good">29 %</span></td><td class="num">2.1 ms · 17 V · 5.2 A</td><td><span class="chip good">9 %</span></td><td class="num">0.8 ms · 19 V · 8.8 A</td><td>4 times during v0.0.83 verification</td></tr>
+          <tr><td>Cold start 0→2A · no bleeder</td><td><span class="chip good">36 %</span></td><td class="num">2.1 ms · 16 V · 6.8 A</td><td><span class="chip good">4 %</span></td><td class="num">0.7 ms · 10 V · 7.7 A</td><td>10-21 cold-step investigation (multiple times)</td></tr>
+          <tr><td>Cold start 0→5A · 1k bleeder</td><td><span class="chip good">1 %</span></td><td class="num">0.9 ms · 3 V · 6.2 A</td><td><span class="chip good">2 %</span></td><td class="num">0.4 ms · 2 V · 6.0 A</td><td>10-22 DYN fast step</td></tr>
+          <tr><td>Cold start 0→7A · 1k · single channel</td><td><span class="chip good">2 %</span></td><td class="num">0.9 ms · 3 V · 8.1 A</td><td><span class="chip good">2 %</span></td><td class="num">0.5 ms · 2 V · 7.1 A</td><td>10-21: the failure was charger overload, not the MOSFET</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-rank">
+    <div class="sec-head"><div class="eyebrow">Root cause</div><h2 id="s-rank">Causes ranked</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Cause</th><th>Evidence</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td class="rank">1</td><td><b>Linear-mode turn-on into a discharged VOUT on warm restart</b></td><td>The 1k bleeder discharges VOUT to about 2 V within 1.4 s; the charger input was observed pulled to 36 V and DETACHing three times; the model gives 85–109 % SOA per event (25 °C).</td><td><span class="chip bad">Primary cause</span></td></tr>
+          <tr><td class="rank">2</td><td><b>Slow gate drive, no inrush control</b></td><td>LTC4359 IGATE(UP) is only 6–14 µA; two IPT015 total 338 nC, about 34 ms from 0 to fully on. The LTC4359 is an ideal diode controller and does not limit inrush current.</td><td><span class="chip bad">Design root</span></td></tr>
+          <tr><td class="rank">3</td><td><b>The VIN-side MOSFET alone takes the linear region</b></td><td>In the back-to-back arrangement Q1 can conduct through its parasitic diode while Q3 must use its channel; all three failures were on the VIN side (CH1 Q3 ×2, CH2 VIN side ×1).</td><td><span class="chip bad">Determines failure location</span></td></tr>
+          <tr><td class="rank">4</td><td><b>Weak linear-region SOA of the IPT015N10N5</b></td><td>OptiMOS 5 with low RDS(on) and high gfs (280 S); SOA slope about −2 (thermally unstable region). 30 V: 8.8 A for 1 ms, 2.1 A for 10 ms.</td><td><span class="chip warn">Amplifying factor</span></td></tr>
+          <tr><td class="rank">5</td><td><b>Cumulative damage from repeated pulses</b></td><td>Many flashes, resets and cold-step tests during development; repeated pulses close to the SOA cause thermal fatigue of the die attach and bond wires, eventually failing in a moderate event (10-22 NORMAL at 2 A).</td><td><span class="chip warn">Contributing factor</span></td></tr>
+          <tr><td class="rank">6</td><td>Overvoltage / avalanche</td><td>SMCJ54A already added; when Q3 is off VDS = VOUT − VIN ≤ about 48 V, well below 100 V.</td><td><span class="chip good">Ruled out</span></td></tr>
+          <tr><td class="rank">7</td><td>Gate overvoltage</td><td>D5 (12 V) clamps G-S; VGS max 20 V.</td><td><span class="chip good">Ruled out</span></td></tr>
+          <tr><td class="rank">8</td><td>Steady-state conduction loss</td><td>5 A × 1.3 mΩ ≈ 33 mW.</td><td><span class="chip good">Ruled out</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-cmp">
+    <div class="sec-head"><div class="eyebrow">Part selection</div><h2 id="s-cmp">IPT015N10N5 vs IPT059N15N3ATMA1</h2><p>Both are TOLL (HSOF-8) packages with compatible pinouts; no board change is needed.</p></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Item</th><th>IPT015N10N5 (current)</th><th>IPT059N15N3ATMA1</th><th>Impact</th></tr></thead>
+        <tbody>
+          <tr><td>VDS rating</td><td class="num">100 V</td><td class="num">150 V</td><td>More overvoltage margin</td></tr>
+          <tr><td>RDS(on) typ/max</td><td class="num">1.3/1.5 mΩ</td><td class="num">5.1/5.9 mΩ</td><td>At 5 A, two devices per channel: 0.07 W → 0.26 W</td></tr>
+          <tr><td>Qg (typ)</td><td class="num">169 nC</td><td class="num">69 nC</td><td>Gate charging time about 2/5, shorter linear region</td></tr>
+          <tr><td>Vth/plateau voltage</td><td class="num">3.0/4.4 V</td><td class="num">3.0/5.4 V</td><td>LTC4359 drives 10–12 V, sufficient</td></tr>
+          <tr><td>gfs</td><td class="num">280 S</td><td class="num">172 S</td><td>Lower gfs is more stable in the linear region</td></tr>
+          <tr><td>SOA 20 V · 1 ms/10 ms/DC</td><td class="num">20/4.9/1.3 A</td><td class="num">84/32/11.6 A</td><td>4–9x</td></tr>
+          <tr><td>SOA 30 V · 1 ms/10 ms/DC</td><td class="num">8.8/2.1/0.57 A</td><td class="num">52/16/5.8 A</td><td>6–10x</td></tr>
+          <tr><td>Warm restart · 1k (model)</td><td><span class="chip bad">109 %</span></td><td><span class="chip good">19 %</span></td><td>About 5x margin per event</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><b>Assessment:</b> The part change brings the main event that has actually occurred from "beyond SOA" back to "about 1/5 of SOA", and since v0.0.83 has already eliminated warm-restart inrush, in practice this is enough to prevent the same failure from happening again. The trigger mechanism is still there, though: whenever VOUT is pulled down significantly during operation (hot-plugging a large capacitive load, recovering from an output short, a charger hiccuping repeatedly), Q3 will still turn on in the linear region. A root fix requires limiting inrush current in the board revision.</div>
+  </section>
+
+  <section aria-labelledby="s-todo">
+    <div class="sec-head"><div class="eyebrow">Countermeasures</div><h2 id="s-todo">Recommendations and verification checklist</h2></div>
+    <div class="cols2">
+      <div class="panel">
+        <h3>Repair (this time)</h3>
+        <ol class="list">
+          <li>Replace Q3 with an IPT059N15N3ATMA1. <b>Replace both devices of the same channel together</b> (they share a gate, so Vth and Qg should match); replacing CH2 at the same time is also recommended.</li>
+          <li>A Q3 breakdown often takes G-S and G-D with it: check D5 (12 V Zener) and R15 (10 Ω), and measure whether U1 GATE is about 10 V above SRC when powered.</li>
+          <li>Unpowered measurement: D-S in diode mode about 0.5 V in one direction, OL in reverse; G-S tens of kΩ (R12 ∥ U1).</li>
+          <li>Powered verification: CH1 ON, CH2 OFF, 0.3 A; VGS should be 10–12 V and VIN − VOUT only a few tens of mV.</li>
+        </ol>
+      </div>
+      <div class="panel">
+        <h3>Firmware and operation</h3>
+        <ol class="list">
+          <li><span class="chip good">Done</span> v0.0.83 immediate recovery on warm restart; v0.0.84 uses a firmware reset instead of <span class="mono">wlink reset</span>; v0.0.85 VIN LOST 25 ms.</li>
+          <li><span class="chip warn">To do</span> Keep latched faults across warm reset (this time PATH DROP was cleared by the IWDG reset and then automatically turned back on).</li>
+          <li><span class="chip warn">To do</span> Low-threshold OFF LEAK: with both channels off and no load, trip at &gt; 20 mA (this time it was only 48 mA, which the 150 mA threshold could not catch).</li>
+          <li>Keep cold-start steps ≤ 5 A; do not hot-plug large capacitive loads during operation (e.g. the input capacitors of an ATX power supply).</li>
+          <li>When debugging use <span class="mono">v203ctl reset</span>, not <span class="mono">wlink reset</span>.</li>
+        </ol>
+      </div>
+      <div class="panel">
+        <h3>Board revision (root fix)</h3>
+        <ol class="list">
+          <li>Add inrush control: limit dV/dt or current at turn-on, e.g. an ideal diode controller with load-switch gate drive and settable dV/dt (something like the TI LM74800-Q1; specs need to be verified), or a hot-swap controller (with SOA timer).</li>
+          <li>Or keep the LTC4359 and add a VOUT pre-charge path that brings VOUT close to VIN before turn-on.</li>
+          <li>Choose MOSFETs rated for linear-region operation (e.g. series designed specifically for hot-swap), whose SOA curves are flat in the 20–40 V range.</li>
+        </ol>
+      </div>
+    </div>
+    <p class="fine">Data sources: oscilloscope (DHO814) and UTL8513 measurements, V203 event logs (prot_log, pd_evt_log, share_hist), Infineon IPT015N10N5 Rev 2.4 / IPT059N15N3 Rev 2.2 datasheets, ADI LTC4359 datasheet, REV2 schematic netlist. Model source: MainCtrl/tools/mosfet_step_sim.py (this page is a JS port with the input capacitance and charger current limit added).</p>
+  </section>
+</div>
+
+<script>
+// ===== Model (same as scratchpad q3/model.js) =====
+const FETS = {
+  IPT015N10N5: { vth: 3.0, qth: 36e-9, qgs: 53e-9, vpl: 4.4, qg: 169e-9, qgd: 34e-9, vtest: 50, gfs: 280, rds: 1.3e-3 },
+  IPT059N15N3: { vth: 3.0, qth: 16e-9, qgs: 29e-9, vpl: 5.4, qg: 69e-9, qgd: 11e-9, vtest: 75, gfs: 172, rds: 5.1e-3 },
+};
+function fetModel(p) {
+  const n = 2, c1 = p.qth / p.vth, c2 = (p.qgs - p.qth) / (p.vpl - p.vth), c3 = (p.qg - p.qgs - p.qgd) / (10 - p.vpl);
+  const c0 = p.qgd / (2 * (Math.sqrt(1 + p.vtest) - 1));
+  return { cgs: v => n * (v < p.vth ? c1 : v < p.vpl ? c2 : c3), cgd: v => c0 / Math.sqrt(1 + Math.max(v, 0)), K: p.gfs * p.gfs / 400 };
+}
+function pathCurrent(p, K, vgs, vtot) {
+  if (vtot <= 0) return [0, 0];
+  const vov = vgs - p.vth;
+  const iIn = v => { if (vov <= 0) return 0; const s = K * vov * vov; return v >= vov ? s : Math.min(s, v / (1 / (2 * K * vov) + p.rds)); };
+  const vOut = i => { if (i <= 0) return 0; const vd = 0.62 + 0.025 * Math.log1p(i / 0.01) + i * 2e-3; return vov > 0 ? Math.min(i * (1 / (2 * K * vov) + p.rds), vd) : vd; };
+  let lo = 0, hi = vtot;
+  for (let k = 0; k < 40; k++) { const mid = (lo + hi) / 2; if (mid + vOut(iIn(mid)) > vtot) hi = mid; else lo = mid; }
+  return [iIn(lo), lo];
+}
+function run(o) {
+  const p = FETS[o.fet], m = fetModel(p), rb = o.rbl > 0 ? o.rbl : 1e12, vin0 = o.vin0, dt = o.dt;
+  let vgs;
+  if (o.gate0 != null) vgs = o.gate0;
+  else if (vin0 / rb > 1e-6) { vgs = p.vth; while (pathCurrent(p, m.K, vgs, 0.03)[0] < vin0 / rb && vgs < 9) vgs += 0.0005; vgs -= o.dv0; }
+  else vgs = 0;
+  let vout = o.vout0 != null ? o.vout0 : vin0 - 0.03, vin = vin0 - (vin0 / rb) * o.rs;
+  let vdsPrev = 0.015, t = 0, e = 0, pmax = 0, vmin = vout, ipk = 0, vinmin = vin0, step = 0;
+  const every = Math.max(1, Math.floor(o.tmax / dt / 600)), tr = [];
+  while (t < o.tmax) {
+    const il = Math.min(o.iStep, o.slew * t) * Math.min(1, Math.max(0, vout / 2)), iload = il + vout / rb;
+    const [ipath, vdsIn] = pathCurrent(p, m.K, vgs, vin - vout);
+    let ich = Math.max(0, (vin0 - vin) / o.rs); if (o.ilim > 0 && ich > o.ilim) ich = o.ilim;
+    const err = vin - vout - 0.03, ig = err > 0.005 ? o.iUp : err > -0.005 ? o.iUp * err / 0.005 : -10 * o.iUp;
+    const dvds = vdsIn - vdsPrev; vdsPrev = vdsIn;
+    const ci = m.cgd(vdsIn), co = m.cgd(vout - (vin - vdsIn));
+    vgs = Math.max(0, Math.min(12, vgs + (ig * dt + ci * dvds) / (m.cgs(vgs) + ci + co)));
+    vin += (ich - ipath) / 100e-6 * dt;
+    vout = Math.max(0, vout + (ipath - iload) / o.cout * dt);
+    const pw = ipath * vdsIn; e += pw * dt;
+    if (pw > pmax) pmax = pw; if (ipath > ipk) ipk = ipath; if (vout < vmin) vmin = vout; if (vin < vinmin) vinmin = vin;
+    if (step % every === 0) tr.push([t, vout, vin, ipath, vdsIn, pw]);
+    t += dt; step++;
+  }
+  return { e, pmax, vmin, ipk, vinmin, tr };
+}
+// ===== SOA (datasheet Diagram 3, Tc=25°C, read from image) =====
+const SOA = {
+  IPT015N10N5: { "100us": [[5, 1013], [10, 503], [20, 240], [30, 106], [48, 90], [100, 10]],
+    "1ms": [[2.1, 700], [5, 288], [10, 79.5], [20, 20.3], [25, 12.1], [30, 8.8], [48, 3.47], [100, 0.8]],
+    "10ms": [[2.7, 270], [5, 76.4], [10, 18.7], [20, 4.94], [25, 3.02], [30, 2.1], [48, 0.82], [100, 0.2]],
+    "DC": [[1.1, 350], [5, 21.3], [10, 5.25], [20, 1.32], [25, 0.85], [30, 0.57], [48, 0.23], [70, 0.1]] },
+  IPT059N15N3: { "100us": [[10, 580], [25, 219], [48, 115], [150, 37]],
+    "1ms": [[5, 310], [10, 155], [20, 84], [30, 51.6], [42, 38], [48, 30], [150, 4.3]],
+    "10ms": [[3.3, 210], [10, 67.6], [18, 38], [20, 32.2], [30, 16.3], [48, 7.36], [150, 1.05]],
+    "DC": [[2.5, 150], [10, 37], [20, 11.6], [30, 5.77], [48, 2.65], [150, 0.38]] },
+};
+function interpLL(pts, v) {
+  if (v <= pts[0][0]) return pts[0][1];
+  for (let i = 1; i < pts.length; i++) if (v <= pts[i][0]) {
+    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], f = Math.log(v / x0) / Math.log(x1 / x0);
+    return Math.exp(Math.log(y0) + f * Math.log(y1 / y0));
+  }
+  return pts[pts.length - 1][1];
+}
+function soaLimit(fet, v, T) {
+  const L = [[1e-4, "100us"], [1e-3, "1ms"], [1e-2, "10ms"], [1, "DC"]];
+  if (T <= 1e-4) return interpLL(SOA[fet]["100us"], v);
+  for (let i = 1; i < L.length; i++) if (T <= L[i][0]) {
+    const a = interpLL(SOA[fet][L[i - 1][1]], v), b = interpLL(SOA[fet][L[i][1]], v), f = Math.log(T / L[i - 1][0]) / Math.log(L[i][0] / L[i - 1][0]);
+    return Math.exp(Math.log(a) + f * Math.log(b / a));
+  }
+  return interpLL(SOA[fet].DC, v);
+}
+function equivPulse(tr, pmax) {
+  const s = tr.filter(r => r[5] > 0.1 * pmax);
+  if (s.length < 2 || pmax < 0.5) return null;
+  return { T: s[s.length - 1][0] - s[0][0], t0: s[0][0], t1: s[s.length - 1][0],
+    vd: s.reduce((a, r) => a + r[4], 0) / s.length, id: s.reduce((a, r) => a + r[3], 0) / s.length };
+}
+
+// ===== Virtual layout =====
+const SCEN = {
+  normal: { desc: "Both MOSFETs fully on, current flows through the channels: VIN → shunt resistor → Q3 → SRC1 → Q1 → VOUT. At 5 A each device dissipates only about 33 mW.", flows: [["M60 150 H1000", ""]], heat: { q3: 0, q1: 0 }, vds: "" },
+  inrush: { desc: "EN has just gone high and VOUT is far below VIN: the LTC4359 charges the gate at 10 µA, and Q3 conducts in the linear region across a 15–30 V drop to charge the output capacitors; Q1 initially conducts through its parasitic diode. The heat is concentrated in Q3.", flows: [["M60 150 H1000", "slow"]], heat: { q3: 0.85, q1: 0.15 }, vds: "VDS(Q3) 15–30 V · 5–10 A" },
+  off: { desc: "EN low: the LTC4359 pulls the gate to the source and both devices are off. Q3's parasitic diode (cathode on the VIN side) blocks VIN → VOUT, and Q1's blocks VOUT → VIN.", flows: [], heat: { q3: 0, q1: 0 }, vds: "" },
+  failed: { desc: "Q3 D-S short: turning EN off cannot block it; current flows through the shorted Q3 and then Q1's parasitic diode to VOUT, with a drop of about 0.55 V. If Q3 is also shorted G-S, the gate is pulled to the source and Q1 can never turn on, which is why CH1 still had only 6 mA when CH2 was lowered by 500 mV. Under load Q1 heats up.", flows: [["M60 150 H1000", "leak"]], heat: { q3: 0.35, q1: 0.7 }, vds: "VIN − VOUT ≈ 0.55 V (Q1 body diode)" },
+};
+const COMP = {
+  J1: { k: "J1", t: "USB-C input (CH1)", d: [["Net", "VIN_48V_1"], ["Source", "EPR AVS 48 V/5 A"]], n: "On warm restart the charger was pulled down to 36 V and DETACHed, a sign that the Q3 inrush current exceeded what the charger can supply." },
+  TVS: { k: "D (added)", t: "SMCJ54A TVS", d: [["VBR", "60 V min"], ["Vc", "87 V @ Ipp"]], n: "Added after the first failure on 10-21. When Q3 is off it sees VOUT − VIN (≤ about 48 V); overvoltage is not the cause this time." },
+  CIN: { k: "C (added)", t: "Input capacitor 100 V 100 µF", d: [["Net", "VIN_48V_1"]], n: "Supplies the current in the early part of the inrush; included in the model as 100 µF." },
+  RS: { k: "R? + U4", t: "10 mΩ shunt + INA237", d: [["U4 VBUS", "VIN1_ANODE"], ["Measures", "Current, input voltage"]], n: "PATH DROP, OFF LEAK and VIN LOST all rely on this measurement. In the current state it still reads 48 mA with EN off." },
+  Q3: { k: "Q3", t: "VIN-side MOSFET (failure location)", d: [["Part", "IPT015N10N5"], ["D", "VIN1_ANODE"], ["S", "SRC1"], ["G", "R15 10 Ω → INPUT1_GATE"]], n: "The only device in the back-to-back pair that must conduct through its channel: in the VIN→VOUT direction its parasitic diode is reverse-biased. All linear-region dissipation is in this device. Two D-S shorts." },
+  Q1: { k: "Q1", t: "VOUT-side MOSFET", d: [["Part", "IPT015N10N5"], ["D", "VOUT_48V"], ["S", "SRC1"], ["G", "INPUT1_GATE (direct)"]], n: "In the VIN→VOUT direction it can conduct through its parasitic diode; during inrush its drop is only about 0.7 V, so the stress is low. After Q3 breaks down it conducts through the parasitic diode for long periods and heats up." },
+  U1: { k: "U1", t: "LTC4359 ideal diode controller", d: [["IGATE(UP)", "6/10/14 µA"], ["Forward regulation", "30 mV"], ["IN/SRC/OUT", "VIN1_ANODE/SRC1/VOUT"]], n: "Only handles the ideal diode function and shutdown; no inrush current limiting. The gate charge current is very small: two IPT015 (338 nC) take about 34 ms from 0 to fully on." },
+  R11: { k: "R11", t: "0 Ω (GATE → INPUT1_GATE)", d: [["Function", "Jumper"]], n: "" },
+  R15: { k: "R15", t: "10 Ω (Q3 gate resistor)", d: [["Function", "Suppress oscillation"]], n: "If Q3 shorts G-D, a large current may pass through it and burn it open or shift its value; measure it when replacing parts." },
+  D5: { k: "D5", t: "BZT52C12 Zener (12 V)", d: [["Cathode", "INPUT1_GATE"], ["Anode", "SRC1"]], n: "Clamps VGS to protect the gates of both MOSFETs (VGS max 20 V). Often damaged together with a Q3 breakdown; measure it when replacing parts." },
+  EN: { k: "R14/R12/C30", t: "SHDN# control", d: [["R14", "1.5 kΩ ← LM1_EN (V203 PB9)"], ["R12", "50 kΩ pull-down"]], n: "When the V203 resets, EN is pulled low by R12 → path off. This is the starting point of warm-restart inrush; since v0.0.83 the path is restored per the saved record within a few ms of boot." },
+  D3: { k: "D3", t: "SS110 → U5 3V3", d: [["Function", "Supply diode-ORed from both VIN rails"]], n: "The V203 and X035 are powered only from VIN; the whole board loses power only if both inputs drop at the same time." },
+  COUT: { k: "C21/C22/added", t: "Output capacitors (about 435 µF)", d: [["Measured", "Back-calculated from the VOUT slope"]], n: "On warm restart Q3 has to recharge these capacitors, in the linear region, from their discharged voltage back to 48 V; the energy is about ½·C·ΔV²." },
+  RBL: { k: "Added", t: "1 kΩ bleeder resistor", d: [["Current", "about 48 mA"], ["Dissipation", "about 2.3 W"], ["τ", "1 kΩ × 435 µF ≈ 0.43 s"]], n: "Solves the cold start (keeps one channel's gate slightly on), but also makes VOUT discharge quickly after EN turns off, so warm-restart inrush went from nearly harmless to close to the SOA limit." },
+  XT60: { k: "J (XT60)", t: "48 V output", d: [["Load", "UTL8513"]], n: "Hot-plugging a large capacitive load during operation is equivalent to pulling VOUT down instantly and triggers the same linear-region turn-on." },
+};
+const board = document.getElementById("board"), flowsG = document.getElementById("flows"), panel = document.getElementById("panel");
+let selComp = "Q3";
+function showComp(id) {
+  selComp = id;
+  board.querySelectorAll(".comp").forEach(g => g.classList.toggle("sel", g.dataset.id === id));
+  const c = COMP[id];
+  panel.innerHTML = `<div class="k">${c.k}</div><h3>${c.t}</h3><dl>${c.d.map(([a, b]) => `<dt>${a}</dt><dd class="mono">${b}</dd>`).join("")}</dl>${c.n ? `<p class="note">${c.n}</p>` : ""}`;
+}
+function showScen(key) {
+  const s = SCEN[key];
+  document.querySelectorAll(".tab[data-scen]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.scen === key)));
+  document.getElementById("scen-desc").textContent = s.desc;
+  flowsG.innerHTML = s.flows.map(([d, cls]) => `<path class="flow ${cls}" d="${d}"></path>`).join("");
+  document.getElementById("heat-q3").style.opacity = s.heat.q3;
+  document.getElementById("heat-q1").style.opacity = s.heat.q1;
+  document.getElementById("vds-tag").setAttribute("opacity", s.vds ? 1 : 0);
+  document.getElementById("vds-text").textContent = s.vds;
+}
+board.querySelectorAll(".comp").forEach(g => {
+  g.addEventListener("click", () => showComp(g.dataset.id));
+  g.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); showComp(g.dataset.id); } });
+});
+document.querySelectorAll(".tab[data-scen]").forEach(b => b.addEventListener("click", () => showScen(b.dataset.scen)));
+showScen("inrush"); showComp("Q3");
+
+// ===== Simulator UI =====
+const PRESETS = {
+  warm1k: { vout0: 1.9, steady: false, istep: 0, rbl: 1000 },
+  warm2k: { vout0: 9.5, steady: false, istep: 0, rbl: 2000 },
+  wlink: { vout0: 19, steady: false, istep: 0, rbl: 1000 },
+  cold2n: { vout0: 47, steady: true, istep: 2, rbl: 0 },
+  cold5: { vout0: 47, steady: true, istep: 5, rbl: 1000 },
+  cold7: { vout0: 47, steady: true, istep: 7, rbl: 1000 },
+};
+const $ = id => document.getElementById(id);
+const ctl = { vout0: $("c-vout0"), steady: $("c-steady"), istep: $("c-istep"), rbl: $("c-rbl"), ilim: $("c-ilim"), iup: $("c-iup") };
+function applyPreset(k) {
+  const p = PRESETS[k];
+  ctl.vout0.value = p.vout0; ctl.steady.checked = p.steady; ctl.istep.value = p.istep; ctl.rbl.value = String(p.rbl);
+  document.querySelectorAll(".tab[data-preset]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.preset === k)));
+  schedule();
+}
+document.querySelectorAll(".tab[data-preset]").forEach(b => b.addEventListener("click", () => applyPreset(b.dataset.preset)));
+Object.values(ctl).forEach(el => el.addEventListener("input", () => {
+  document.querySelectorAll(".tab[data-preset]").forEach(b => b.setAttribute("aria-pressed", "false"));
+  schedule();
+}));
+let timer = null;
+function schedule() {
+  $("o-vout0").textContent = ctl.steady.checked ? "Steady" : `${(+ctl.vout0.value).toFixed(1)} V`;
+  ctl.vout0.disabled = ctl.steady.checked;
+  $("o-istep").textContent = `${(+ctl.istep.value).toFixed(1)} A`;
+  clearTimeout(timer); timer = setTimeout(simulate, 120);
+}
+const FC = { IPT015N10N5: "var(--s1)", IPT059N15N3: "var(--s2)" };
+let last = null;
+function simulate() {
+  const steady = ctl.steady.checked, rbl = +ctl.rbl.value;
+  const base = { dv0: 0.35, iUp: +ctl.iup.value, cout: 435e-6, rs: 0.09, vin0: 47.85, ilim: +ctl.ilim.value, slew: 0.01e6, dt: 0.5e-6, tmax: 40e-3,
+    iStep: +ctl.istep.value, rbl, vout0: steady ? null : +ctl.vout0.value, gate0: steady ? null : 0 };
+  if (steady && rbl === 0) base.dv0 = 0;
+  const res = {};
+  for (const fet of Object.keys(FETS)) {
+    const r = run({ ...base, fet }); const q = equivPulse(r.tr, r.pmax);
+    r.q = q; r.lim = q ? soaLimit(fet, q.vd, q.T) : null; r.u = q ? q.id / r.lim * 100 : 0; res[fet] = r;
+  }
+  last = res; render(res);
+}
+function status(u) { return u >= 100 ? ["bad", "Beyond SOA"] : u >= 50 ? ["warn", "Near limit"] : ["good", "Safe"]; }
+function render(res) {
+  $("metrics").innerHTML = Object.entries(res).map(([fet, r]) => {
+    const [cls, lab] = status(r.u), q = r.q;
+    return `<div class="mcard"><div class="hd"><span class="name"><span class="sw" style="background:${FC[fet]}"></span>${fet}</span><span class="chip ${cls}">${lab}</span></div>
+      <div class="big">${q ? r.u.toFixed(0) : "0"}<small>% SOA (25 °C)</small></div>
+      <dl><div><dt>Equivalent pulse</dt><dd>${q ? (q.T * 1e3).toFixed(2) + " ms" : "—"}</dd></div>
+      <div><dt>Avg VDS/ID</dt><dd>${q ? q.vd.toFixed(1) + " V/" + q.id.toFixed(1) + " A" : "—"}</dd></div>
+      <div><dt>SOA allowed</dt><dd>${q ? r.lim.toFixed(1) + " A" : "—"}</dd></div>
+      <div><dt>Q3 energy</dt><dd>${(r.e * 1e3).toFixed(0)} mJ</dd></div>
+      <div><dt>Peak current</dt><dd>${r.ipk.toFixed(1)} A</dd></div>
+      <div><dt>VIN min</dt><dd>${r.vinmin.toFixed(1)} V</dd></div></dl></div>`;
+  }).join("");
+  let tEnd = 4;
+  for (const r of Object.values(res)) if (r.q) tEnd = Math.max(tEnd, r.q.t1 * 1e3 * 2.2);
+  tEnd = Math.min(40, Math.ceil(tEnd));
+  lineChart($("ch-vout"), res, 1, tEnd, "V", v => v.toFixed(1) + " V");
+  lineChart($("ch-p"), res, 5, tEnd, "W", v => v.toFixed(0) + " W");
+  soaChart($("ch-soa"), res);
+}
+const SVGNS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function niceMax(v) { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p; return 10 * p; }
+function lineChart(box, res, col, tEnd, unit, fmt) {
+  const svg = box.querySelector("svg"); svg.innerHTML = "";
+  const W = 420, H = 230, L = 44, R = 12, T = 10, B = 30, pw = W - L - R, ph = H - T - B;
+  let ymax = 0; for (const r of Object.values(res)) for (const p of r.tr) if (p[0] * 1e3 <= tEnd) ymax = Math.max(ymax, p[col]);
+  ymax = niceMax(ymax * 1.05);
+  const x = t => L + t / tEnd * pw, y = v => T + ph - v / ymax * ph;
+  for (let i = 0; i <= 4; i++) {
+    const v = ymax * i / 4;
+    el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "var(--grid)", "stroke-width": 1 }, svg);
+    const tx = el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: "var(--muted)" }, svg); tx.textContent = +v.toFixed(1);
+  }
+  for (let i = 0; i <= 4; i++) {
+    const t = tEnd * i / 4, tx = el("text", { x: x(t), y: H - 10, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)" }, svg);
+    tx.textContent = (+t.toFixed(1)) + (i === 4 ? " ms" : "");
+  }
+  el("line", { x1: L, x2: W - R, y1: T + ph, y2: T + ph, stroke: "var(--muted)", "stroke-width": 1 }, svg);
+  for (const [fet, r] of Object.entries(res)) {
+    const pts = r.tr.filter(p => p[0] * 1e3 <= tEnd).map(p => `${x(p[0] * 1e3).toFixed(1)},${y(p[col]).toFixed(1)}`).join(" ");
+    el("polyline", { points: pts, fill: "none", stroke: FC[fet], "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+  }
+  // Crosshair and tooltip
+  const cross = el("line", { y1: T, y2: T + ph, stroke: "var(--muted)", "stroke-width": 1, opacity: 0 }, svg);
+  const dots = Object.keys(res).map(fet => el("circle", { r: 4, fill: FC[fet], stroke: "var(--surface)", "stroke-width": 2, opacity: 0 }, svg));
+  let tip = box.querySelector(".tip"); if (!tip) { tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; box.appendChild(tip); }
+  const hit = el("rect", { x: L, y: T, width: pw, height: ph, fill: "transparent" }, svg);
+  hit.addEventListener("pointermove", ev => {
+    const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+    const sp = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const t = Math.max(0, Math.min(tEnd, (sp.x - L) / pw * tEnd));
+    cross.setAttribute("x1", x(t)); cross.setAttribute("x2", x(t)); cross.setAttribute("opacity", 1);
+    const lines = [`${t.toFixed(2)} ms`];
+    Object.entries(res).forEach(([fet, r], i) => {
+      let best = r.tr[0]; for (const p of r.tr) if (Math.abs(p[0] * 1e3 - t) < Math.abs(best[0] * 1e3 - t)) best = p;
+      dots[i].setAttribute("cx", x(best[0] * 1e3)); dots[i].setAttribute("cy", y(best[col])); dots[i].setAttribute("opacity", 1);
+      lines.push(`${fet.slice(0, 6)}  ${fmt(best[col])}`);
+    });
+    tip.innerHTML = lines.join("<br>"); tip.hidden = false;
+    const bb = box.getBoundingClientRect(), sb = svg.getBoundingClientRect();
+    tip.style.left = (ev.clientX - bb.left) + "px"; tip.style.top = (sb.top - bb.top + (T + 10) * sb.height / H) + "px";
+  });
+  hit.addEventListener("pointerleave", () => { cross.setAttribute("opacity", 0); dots.forEach(d => d.setAttribute("opacity", 0)); tip.hidden = true; });
+}
+function soaChart(box, res) {
+  const svg = box.querySelector("svg"); svg.innerHTML = "";
+  const W = 420, H = 260, L = 46, R = 12, T = 10, B = 34, pw = W - L - R, ph = H - T - B;
+  const vx = [1, 100], iy = [0.1, 300];
+  const x = v => L + Math.log10(v / vx[0]) / Math.log10(vx[1] / vx[0]) * pw;
+  const y = i => T + ph - Math.log10(i / iy[0]) / Math.log10(iy[1] / iy[0]) * ph;
+  for (const v of [1, 2, 5, 10, 20, 50, 100]) {
+    el("line", { x1: x(v), x2: x(v), y1: T, y2: T + ph, stroke: "var(--grid)", "stroke-width": 1 }, svg);
+    const tx = el("text", { x: x(v), y: H - 14, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)" }, svg); tx.textContent = v;
+  }
+  const xl = el("text", { x: W - R, y: H - 1, "text-anchor": "end", "font-size": 11, fill: "var(--muted)" }, svg); xl.textContent = "VDS (V)";
+  for (const i of [0.1, 1, 10, 100]) {
+    el("line", { x1: L, x2: W - R, y1: y(i), y2: y(i), stroke: "var(--grid)", "stroke-width": 1 }, svg);
+    const tx = el("text", { x: L - 6, y: y(i) + 4, "text-anchor": "end", "font-size": 11, fill: "var(--muted)" }, svg); tx.textContent = i;
+  }
+  const yl = el("text", { x: 4, y: T + 8, "font-size": 11, fill: "var(--muted)" }, svg); yl.textContent = "ID (A)";
+  const clipId = "soaclip"; const cp = el("clipPath", { id: clipId }, svg); el("rect", { x: L, y: T, width: pw, height: ph }, cp);
+  const g = el("g", { "clip-path": `url(#${clipId})` }, svg);
+  const marks = [];
+  for (const [fet, r] of Object.entries(res)) {
+    if (!r.q) continue;
+    const pts = []; for (let k = 0; k <= 60; k++) { const v = vx[0] * Math.pow(vx[1] / vx[0], k / 60); pts.push(`${x(v).toFixed(1)},${y(Math.max(iy[0], soaLimit(fet, v, r.q.T))).toFixed(1)}`); }
+    el("polyline", { points: pts.join(" "), fill: "none", stroke: FC[fet], "stroke-width": 1.6, "stroke-dasharray": "5 4", opacity: .9 }, g);
+    const tp = r.tr.filter(p => p[5] > 0.01 * r.pmax && p[4] >= vx[0] && p[3] >= iy[0]).map(p => `${x(p[4]).toFixed(1)},${y(p[3]).toFixed(1)}`);
+    if (tp.length > 1) el("polyline", { points: tp.join(" "), fill: "none", stroke: FC[fet], "stroke-width": 2, "stroke-linejoin": "round" }, g);
+    const cx = x(Math.max(vx[0], r.q.vd)), cy = y(r.q.id);
+    const c = el("circle", { cx, cy, r: 6, fill: FC[fet], stroke: "var(--surface)", "stroke-width": 2 }, g);
+    marks.push([c, fet, r, cx, cy]);
+  }
+  let tip = box.querySelector(".tip"); if (!tip) { tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; box.appendChild(tip); }
+  for (const [c, fet, r, cx, cy] of marks) {
+    const hitc = el("circle", { cx, cy, r: 14, fill: "transparent", style: "cursor:pointer" }, svg);
+    hitc.addEventListener("pointerenter", () => {
+      tip.innerHTML = `${fet}<br>${(r.q.T * 1e3).toFixed(2)} ms · ${r.q.vd.toFixed(1)} V · ${r.q.id.toFixed(1)} A<br>SOA ${r.lim.toFixed(1)} A → ${r.u.toFixed(0)} %`;
+      tip.hidden = false;
+      const bb = box.getBoundingClientRect(), sb = svg.getBoundingClientRect();
+      tip.style.left = (sb.left - bb.left + cx * sb.width / W) + "px"; tip.style.top = (sb.top - bb.top + cy * sb.height / H - 6) + "px";
+    });
+    hitc.addEventListener("pointerleave", () => { tip.hidden = true; });
+  }
+}
+applyPreset("warm1k");
+</script>
+</body></html>

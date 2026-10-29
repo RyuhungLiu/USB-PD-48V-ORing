@@ -1,0 +1,52 @@
+==== fan_up (screen module 0°) ====
+Top shell 1 solid(s), 85 honeycomb hole(s)
+Enclosure 150 x 140 x 86; ORing main board X 13.0..69.0; X9 X 72.0..135.0 Y 12.0..137.0; fan center (75, 74)
+X9 180°: base plate holes (77.8, 17.8), (77.8, 131.2), (103.2, 17.8), (103.4, 131.2); P5 input at (120, 18), XT60 end face at (41, 100), straight-line distance 115 mm (recommended wire length >= 202 mm)
+Rear panel: USB-C X 21.2, 60.7, Z 18.2; window center (62.5, 50.0); touch (106.0, 50.0); screen module 0°, pin header on the left side
+Interference check (overlap volume mm^3, listed only if > 0.01):
+  screen minimum distance to main board parts 11.59 mm
+  fan minimum distance to main board parts 20.50 mm
+  X9 minimum distance to main board parts 6.95 mm
+  0 interference(s) in total
+Print overhang check (normal facing down, angle to horizontal < 45°, excluding faces within 0.6 mm of the bed):
+  shell: 383.1 mm², 83 face(s)
+    29.5 mm²  4.8 x 8.0 x 4.8  @ (120.0, 136.0, 77.6)
+    29.5 mm²  4.8 x 8.0 x 4.8  @ (6.0, 136.0, 3.6)
+    29.5 mm²  4.8 x 8.0 x 4.8  @ (144.0, 136.0, 3.6)
+    29.5 mm²  4.8 x 8.0 x 4.8  @ (6.0, 136.0, 67.6)
+    29.2 mm²  14.6 x 2.0 x 0.0  @ (106.0, 138.0, 41.7)
+    17.2 mm²  7.8 x 2.2 x 0.0  @ (21.2, 138.9, 71.4)
+    17.2 mm²  7.8 x 2.2 x 0.0  @ (60.7, 138.9, 71.4)
+    10.3 mm²  4.2 x 3.2 x 4.2  @ (35.8, 135.4, 48.0)
+  base: 314.2 mm², 4 face(s)
+    78.5 mm²  10.0 x 10.0 x 0.0  @ (14.0, 12.8, 0.6)
+    78.5 mm²  10.0 x 10.0 x 0.0  @ (136.0, 12.8, 0.6)
+    78.5 mm²  10.0 x 10.0 x 0.0  @ (14.0, 122.8, 0.6)
+    78.5 mm²  10.0 x 10.0 x 0.0  @ (136.0, 122.8, 0.6)
+==== fan_down (screen module 180°) ====
+Top shell 1 solid(s), 85 honeycomb hole(s)
+Enclosure 150 x 140 x 86; ORing main board X 13.0..69.0; X9 X 72.0..135.0 Y 12.0..137.0; fan center (75, 74)
+X9 180°: base plate holes (77.8, 17.8), (77.8, 131.2), (103.2, 17.8), (103.4, 131.2); P5 input at (120, 18), XT60 end face at (41, 100), straight-line distance 115 mm (recommended wire length >= 202 mm)
+Rear panel: USB-C X 21.2, 60.7, Z 18.2; window center (62.5, 50.0); touch (106.0, 50.0); screen module 180°, pin header on the right side
+Interference check (overlap volume mm^3, listed only if > 0.01):
+  screen minimum distance to main board parts 11.59 mm
+  fan minimum distance to main board parts 20.50 mm
+  X9 minimum distance to main board parts 6.95 mm
+  0 interference(s) in total
+Print overhang check (normal facing down, angle to horizontal < 45°, excluding faces within 0.6 mm of the bed):
+  shell: 383.1 mm², 83 face(s)
+    29.5 mm²  4.8 x 8.0 x 4.8  @ (120.0, 136.0, 77.6)
+    29.5 mm²  4.8 x 8.0 x 4.8  @ (6.0, 136.0, 3.6)
+    29.5 mm²  4.8 x 8.0 x 4.8  @ (144.0, 136.0, 3.6)
+    29.5 mm²  4.8 x 8.0 x 4.8  @ (6.0, 136.0, 67.6)
+    29.2 mm²  14.6 x 2.0 x 0.0  @ (106.0, 138.0, 41.7)
+    17.2 mm²  7.8 x 2.2 x 0.0  @ (21.2, 138.9, 71.4)
+    17.2 mm²  7.8 x 2.2 x 0.0  @ (60.7, 138.9, 71.4)
+    10.3 mm²  4.2 x 3.2 x 4.2  @ (89.2, 135.4, 48.1)
+  base: 314.2 mm², 4 face(s)
+    78.5 mm²  10.0 x 10.0 x 0.0  @ (14.0, 12.8, 0.6)
+    78.5 mm²  10.0 x 10.0 x 0.0  @ (136.0, 12.8, 0.6)
+    78.5 mm²  10.0 x 10.0 x 0.0  @ (14.0, 122.8, 0.6)
+    78.5 mm²  10.0 x 10.0 x 0.0  @ (136.0, 122.8, 0.6)
+Output: <repo>\ATX_PSU\mechanical\out
+GUI screenshots: <variant>/gui_*.png
